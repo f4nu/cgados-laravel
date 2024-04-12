@@ -7,6 +7,8 @@ use App\Models\SessionTerminalCommand;
 use App\Models\TerminalCommand;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Log;
 
 class TerminalCommandController extends Controller
 {
@@ -37,12 +39,16 @@ class TerminalCommandController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $command): TerminalCommandResource {
+    public function show(Request $request, string $command): TerminalCommandResource {
         $terminalCommand = TerminalCommand::where('command', $command)->firstOrFail();
+        $body = json_decode($request->getContent());
+        $terminalSession = ($body->terminal_session ?? '') ?: uniqid();
+
+        $request->session()->put('terminal_session', $terminalSession);
         (new SessionTerminalCommand())->create([
-            'ip' => request()->ip(),
+            'terminal_session' => $terminalSession,
             'terminal_command_id' => $terminalCommand->id,
-            'args' => json_encode(request()->all()),
+            'args' => json_encode(request()->all())
         ]);
         return new TerminalCommandResource($terminalCommand);
     }

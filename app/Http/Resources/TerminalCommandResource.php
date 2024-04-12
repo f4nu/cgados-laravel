@@ -18,6 +18,7 @@ class TerminalCommandResource extends JsonResource
             'command' => $this->command,
             'output' => $this->parseCommand(),
             'force' => $this->force === 1,
+            'terminal_session' => $request->session()->get('terminal_session') ?? NULL,
         ];
     }
 }

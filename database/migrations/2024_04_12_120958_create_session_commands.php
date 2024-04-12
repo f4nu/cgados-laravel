@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('session_terminal_commands', function (Blueprint $table) {
             $table->id();
 
-            $table->string('ip', 45);
             $table->unsignedBigInteger('terminal_command_id')->constrained();
+            $table->string('terminal_session');
             $table->text('args')->nullable();
 
             $table->timestamps();
