@@ -17,6 +17,7 @@ class TerminalCommandResource extends JsonResource
         return [
             'command' => $this->command,
             'output' => $this->parseCommand(),
+            'force' => $this->force === 1,
         ];
     }
 }

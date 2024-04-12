@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\TerminalCommandResource;
+use App\Models\SessionTerminalCommand;
 use App\Models\TerminalCommand;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,6 +39,11 @@ class TerminalCommandController extends Controller
      */
     public function show(string $command): TerminalCommandResource {
         $terminalCommand = TerminalCommand::where('command', $command)->firstOrFail();
+        (new SessionTerminalCommand())->create([
+            'ip' => request()->ip(),
+            'terminal_command_id' => $terminalCommand->id,
+            'args' => json_encode(request()->all()),
+        ]);
         return new TerminalCommandResource($terminalCommand);
     }
 
