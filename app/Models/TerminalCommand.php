@@ -34,11 +34,12 @@ class TerminalCommand extends Model
             $nowRelative = $nowUnix - $startDateUnix;
             $pinRelative = $pinDateUnix - $startDateUnix;
 
-            $nowPercent = (int)(($nowRelative * 100 / $endRelative) * 1000) / 1000;
+            $nowPercentPrecise = $nowRelative * 100 / $endRelative;
+            $nowPercent = (int)(($nowPercentPrecise) * 1000) / 1000;
             $pinPercent = (int)(($pinRelative * 100 / $endRelative) * 1000) / 1000;
 
             $totalDiskCheckPosition = 547556790632448;
-            $currentDiskCheckPosition = (int)($totalDiskCheckPosition / $nowPercent);
+            $currentDiskCheckPosition = (int)($totalDiskCheckPosition / $nowPercentPrecise);
 
             $modifier = 1.5;
             $barMax = 100 / $modifier;
