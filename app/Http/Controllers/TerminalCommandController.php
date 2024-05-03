@@ -40,7 +40,7 @@ class TerminalCommandController extends Controller
      * Display the specified resource.
      */
     public function show(Request $request, string $command): TerminalCommandResource {
-        $terminalCommand = TerminalCommand::where('command', $command)->firstOrFail();
+        $terminalCommand = TerminalCommand::where('command', $command)->where('enabled', 1)->firstOrFail();
         $body = json_decode($request->getContent());
         $terminalSession = ($body->terminal_session ?? '') ?: uniqid();
 
