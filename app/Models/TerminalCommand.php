@@ -28,11 +28,11 @@ class TerminalCommand extends Model
             $startDateUnix = (new Carbon($startDate))->unix();
             $endDateUnix = (new Carbon($endDate))->unix();
             $nowUnix = (new Carbon())->unix();
-            $pintDateUnix = (new Carbon($pinDate))->unix();
+            $pinDateUnix = (new Carbon($pinDate))->unix();
 
             $endRelative = $endDateUnix - $startDateUnix;
             $nowRelative = $nowUnix - $startDateUnix;
-            $pinRelative = $pintDateUnix - $startDateUnix;
+            $pinRelative = $pinDateUnix - $startDateUnix;
 
             $nowPercent = (int)(($nowRelative * 100 / $endRelative) * 1000) / 1000;
             $pinPercent = (int)(($pinRelative * 100 / $endRelative) * 1000) / 1000;
