@@ -214,8 +214,7 @@ class TerminalCommand extends Model
             'currentDay',
             'pokemon',
         ];
-        $testType = collect($testTypes)->random();
-        $testType = 'pokemon';
+        $testType = collect($testTypes)->random(); 
 
         switch ($testType) {
             case 'equation':
