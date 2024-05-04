@@ -201,6 +201,11 @@ RET;
  
 Please take great care in answering the tasks as time cannot yet be rolled back.
 RET;
+            else if ($totalSessionTestsUpdated == 7)
+                $additionalPhrase = <<<RET
+ 
+Strength is in numbers. The more you solve, the more you thrive.
+RET;
             return sprintf($returnPhrase, $additionalPhrase);
         }
 
