@@ -16,55 +16,272 @@ class TerminalCommand extends Model
     public function parseCommand(): string {
         if ($this->command == 'intro')
             return $this->intro($this->output);
+        if ($this->command == 'intro-2')
+            return $this->intro2($this->output);
+        if ($this->command == 'input')
+            return $this->input();
 
-        return $this->output;
+        return $this->output ?? '';
     }
 
     public function intro(string $string): string {
-            $startDate = '2024-04-06';
-            $endDate = '2025-05-22';
-            $pinDate = '2024-05-22';
+        $startDate = '2024-04-06';
+        $endDate = '2025-05-22';
+        $pinDate = '2024-05-22';
 
-            $startDateUnix = (new Carbon($startDate))->unix();
-            $endDateUnix = (new Carbon($endDate))->unix();
-            $nowUnix = (new Carbon())->unix();
-            $pinDateUnix = (new Carbon($pinDate))->unix();
+        $startDateUnix = (new Carbon($startDate))->unix();
+        $endDateUnix = (new Carbon($endDate))->unix();
+        $nowUnix = (new Carbon())->unix();
+        $pinDateUnix = (new Carbon($pinDate))->unix();
 
-            $endRelative = $endDateUnix - $startDateUnix;
-            $nowRelative = $nowUnix - $startDateUnix;
-            $pinRelative = $pinDateUnix - $startDateUnix;
+        $endRelative = $endDateUnix - $startDateUnix;
+        $nowRelative = $nowUnix - $startDateUnix;
+        $pinRelative = $pinDateUnix - $startDateUnix;
 
-            $nowPercentPrecise = $nowRelative * 100 / $endRelative;
-            $nowPercent = (int)(($nowPercentPrecise) * 1000) / 1000;
-            $pinPercent = (int)(($pinRelative * 100 / $endRelative) * 1000) / 1000;
+        $nowPercentPrecise = $nowRelative * 100 / $endRelative;
+        $nowPercent = (int)(($nowPercentPrecise) * 1000) / 1000;
+        $pinPercent = (int)(($pinRelative * 100 / $endRelative) * 1000) / 1000;
 
-            $totalDiskCheckPosition = 547556790632448;
-            $currentDiskCheckPosition = (int)($totalDiskCheckPosition / $nowPercentPrecise);
+        $totalDiskCheckPosition = 547556790632448;
+        $currentDiskCheckPosition = (int)($totalDiskCheckPosition / $nowPercentPrecise);
 
-            $modifier = 1.5;
-            $barMax = 100 / $modifier;
-            $emptyCharacter = '░';
-            $fullCharacter = '█';
+        $modifier = 1.5;
+        $barMax = 100 / $modifier;
+        $emptyCharacter = '░';
+        $fullCharacter = '█';
 
-            $bar = '[';
-            for ($i = 1; $i <= $barMax; $i++) {
-                if ($i <= $nowPercent / $modifier)
-                    $bar .= $fullCharacter;
-                else
-                    $bar .= $emptyCharacter;
-            }
-            $bar .= ']';
+        $bar = '[';
+        for ($i = 1; $i <= $barMax; $i++) {
+            if ($i <= $nowPercent / $modifier)
+                $bar .= $fullCharacter;
+            else
+                $bar .= $emptyCharacter;
+        }
+        $bar .= ']';
 
-            $bottomBar = ' ';
-            $pinPercentPosition = (int)($pinPercent * $barMax / 100);
-            $pinBottomBarActivationThreshold = (int)($pinPercentPosition / $modifier);
-            for ($i = 1; $i <= $barMax; $i++) {
-                if ($i < $pinBottomBarActivationThreshold)
-                    $bottomBar .= ' ';
-                else if ($i == $pinBottomBarActivationThreshold)
-                    $bottomBar .= '^';
-            }
+        $bottomBar = ' ';
+        $pinPercentPosition = (int)($pinPercent * $barMax / 100);
+        $pinBottomBarActivationThreshold = (int)($pinPercentPosition / $modifier);
+        for ($i = 1; $i <= $barMax; $i++) {
+            if ($i < $pinBottomBarActivationThreshold)
+                $bottomBar .= ' ';
+            else if ($i == $pinBottomBarActivationThreshold)
+                $bottomBar .= '^';
+        }
 
         return sprintf($string, $currentDiskCheckPosition, $totalDiskCheckPosition, $nowPercent, $bar, $bottomBar);
+    }
+
+    public function intro2(string $string): string {
+        $startDate = '2024-04-06';
+        $endDate = '2025-05-22';
+        $pinDate = '2024-06-08';
+        $midDate = '2024-05-06';
+
+        $startDateUnix = (new Carbon($startDate))->unix();
+        $endDateUnix = (new Carbon($endDate))->unix();
+        $nowUnix = (new Carbon())->unix();
+        $pinDateUnix = (new Carbon($pinDate))->unix();
+        $midDateUnix = (new Carbon($midDate))->unix();
+
+        $endRelative = $endDateUnix - $startDateUnix;
+        $nowRelative = $nowUnix - $startDateUnix;
+        $pinRelative = $pinDateUnix - $startDateUnix;
+        $midRelative = $midDateUnix - $startDateUnix;
+
+        $nowPercentPrecise = $nowRelative * 100 / $endRelative;
+        $midPercentPrecise = $midRelative * 100 / $endRelative;
+
+        $totalDiskCheckPosition = 547556790632448;
+        $currentDiskCheckPosition = (int)($totalDiskCheckPosition / $nowPercentPrecise);
+
+        $modifier = 1.5;
+        $barMax = 100 / $modifier;
+        $emptyCharacter = '░';
+        $fullCharacter = '█';
+
+        // 75 possibilità al giorno
+        // differenza tra il 6/5 e il 8/6 = 33 giorni
+        $daysDifference = (new Carbon($midDate))->diffInDays($pinDate);
+        // 33 * 75 = 2475
+        $oneStep = (100 - $midPercentPrecise) / ($daysDifference * 75);
+
+        $globalData = SessionData::getGlobalSession();
+        $totalSolvedTests = $globalData->getData('test.solvedTests') ?? 0;
+        $percentToAdd = $totalSolvedTests * $oneStep;
+        $nowPercentPrecise += $percentToAdd;
+
+        //dd($nowPercentPrecise, $oneStep, $midPercentPrecise, $midDateUnix, $midDate);
+
+        $nowPercent = (int)(($nowPercentPrecise) * 1000) / 1000;
+        $bar = '[';
+        for ($i = 1; $i <= $barMax; $i++) {
+            if ($i <= $nowPercent / $modifier)
+                $bar .= $fullCharacter;
+            else
+                $bar .= $emptyCharacter;
+        }
+        $bar .= ']';
+
+        $footerString = '';
+        $sessionData = SessionData::getFromTerminalSession();
+        $firstTime = $sessionData->getData('intro-2.first_time_done');
+        if (is_null($firstTime)) {
+            $sessionData->saveData('intro-2.first_time_done', true);
+            $footerString = 'testing' . self::getDeleteString(7, 100);
+        }
+        $footerString .= 'the system operational';
+        $sessionData->saveData('savedCommand', 'startTest');
+
+        return sprintf($string, $currentDiskCheckPosition, $totalDiskCheckPosition, $nowPercent, $bar, $footerString);
+    }
+
+    public function input(): string {
+        $input = trim($this->args->input);
+        $sessionData = SessionData::getFromTerminalSession();
+        $globalData = SessionData::getGlobalSession();
+        $savedCommand = $sessionData->getData('savedCommand');
+        $dailyTestSessionKey = $this->getSessionTestKey();
+        $totalSessionTests = $sessionData->getData($dailyTestSessionKey) ?? 0;
+        $dailySolvedTests = $globalData->getData($dailyTestSessionKey) ?? 0;
+        if ($savedCommand == 'startTest') {
+            if ($input == 'Y' || $input == 'y' || $input == ''){
+                if ($totalSessionTests >= $this->getMaxSessionTests() || $dailySolvedTests >= $this->getMaxGlobalTests())
+                    return "The system is currently overloaded. Please check back in 9§P300§9§P300§9§P300§9§P300§9§P500§9§P500§9§P500§9§P500§9§P800§9§P800§9§P800§9§P800§9\n \n \n \n§DC§";
+
+                $sessionData->saveData('savedCommand', 'continueTest');
+                return $this->getRandomTest();
+            }
+
+            $sessionData->saveData('savedCommand', null);
+            return "Aborted.§P1000§\n \n \n \n§DC§";
+        }
+
+        if ($savedCommand == 'continueTest') {
+            $testResult = $sessionData->getData('test.testResult');
+            if ($input == $testResult || (is_int($testResult) && is_numeric($input) && (int)$input == $testResult)){
+                $totalTests = $globalData->getData('test.solvedTests') ?? 0;
+                $updatedTotalTests = $totalTests + 1;
+                $globalData->saveData('test.solvedTests', $updatedTotalTests);
+
+                $globalData->saveData($dailyTestSessionKey, $dailySolvedTests + 1);
+            }
+
+            $sessionData->saveData('savedCommand', null);
+            $sessionData->saveData('test.testResult', null);
+            $totalSessionTestsUpdated = $totalSessionTests + 1;
+            $sessionData->saveData($dailyTestSessionKey, $totalSessionTestsUpdated);
+            return "Thank you for your input. There may be additional tasks available to speed up the redundancy check [{$totalSessionTestsUpdated}/{$this->getMaxSessionTests()}].§P1000§\n \n \n \n§DC§";
+        }
+
+        return "{$input} is not a recognized command.§DC§";
+    }
+
+    private function getMaxSessionTests(): int {
+        return 5;
+    }
+
+    private function getMaxGlobalTests(): int {
+        return $this->getMaxSessionTests() * 15;
+    }
+
+    private function getSessionTestKey(): string {
+        $day = (new Carbon())->format('Y-m-d');
+        return "test.{$day}.totalTests";
+    }
+
+    private function getRandomTest(): string {
+        $testTypes = [
+            'equation',
+            'ascii',
+            'currentDay',
+        ];
+        $testType = $testTypes[array_rand($testTypes)];
+
+        switch ($testType) {
+            case 'equation':
+                return $this->getEquationTest();
+            case 'ascii':
+                return $this->getAsciiTest();
+            case 'currentDay':
+                return $this->getCurrentNumberOfDayTest();
+        }
+
+        return '';
+    }
+
+    private function getEquationTest(): string {
+        $operators = ['+', '-', '*'];
+        $operator = $operators[array_rand($operators)];
+        $firstNumber = rand(1, 100);
+        $secondNumber = rand(1, 100);
+        $result = 0;
+        switch ($operator) {
+            case '+':
+                $result = $firstNumber + $secondNumber;
+                break;
+            case '-':
+                $result = $firstNumber - $secondNumber;
+                break;
+            case '*':
+                $result = $firstNumber * $secondNumber;
+                break;
+        }
+        $sessionData = SessionData::getFromTerminalSession();
+        $sessionData->saveData('test.testResult', $result);
+        return "Resolve this impossible test: {$firstNumber} {$operator} {$secondNumber} = ? §INPUT§";
+    }
+
+    private function getAsciiTest(): string {
+        $asciiCharacters = [
+            'notarobot' => <<<ASCII
+              __                          __              __
+             /\ \__                      /\ \            /\ \__
+  ___     ___\ \ ,_\    __     _ __   ___\ \ \____    ___\ \ ,_\
+/' _ `\  / __`\ \ \/  /'__`\  /\`'__\/ __`\ \ '__`\  / __`\ \ \/
+/\ \/\ \/\ \L\ \ \ \_/\ \L\.\_\ \ \//\ \L\ \ \ \L\ \/\ \L\ \ \ \_
+\ \_\ \_\ \____/\ \__\ \__/.\_\\ \_\\ \____/\ \_,__/\ \____/\ \__\
+ \/_/\/_/\/___/  \/__/\/__/\/_/ \/_/ \/___/  \/___/  \/___/  \/__/
+ASCII,
+            'whytesting' => <<<ASCII
+            **                 **                     **   **
+           /**       **   **  /**                    /**  //            *****
+ ***     **/**      //** **  ******  *****   ****** ****** ** *******  **///**
+//**  * /**/******   //***  ///**/  **///** **//// ///**/ /**//**///**/**  /**
+ /** ***/**/**///**   /**     /**  /*******//*****   /**  /** /**  /**//******
+ /****/****/**  /**   **      /**  /**////  /////**  /**  /** /**  /** /////**
+ ***/ ///**/**  /**  **       //** //****** ******   //** /** ***  /**  *****
+///    /// //   //  //         //   ////// //////     //  // ///   //  /////
+ASCII,
+            'help' => <<<ASCII
+      ___           ___           ___       ___
+     /\__\         /\  \         /\__\     /\  \
+    /:/  /        /::\  \       /:/  /    /::\  \
+   /:/__/        /:/\:\  \     /:/  /    /:/\:\  \
+  /::\  \ ___   /::\~\:\  \   /:/  /    /::\~\:\  \
+ /:/\:\  /\__\ /:/\:\ \:\__\ /:/__/    /:/\:\ \:\__\
+ \/__\:\/:/  / \:\~\:\ \/__/ \:\  \    \/__\:\/:/  /
+      \::/  /   \:\ \:\__\    \:\  \        \::/  /
+      /:/  /     \:\ \/__/     \:\  \        \/__/
+     /:/  /       \:\__\        \:\__\
+     \/__/         \/__/         \/__/
+ASCII,
+        ];
+        $chosenAscii = array_rand($asciiCharacters);
+
+        $sessionData = SessionData::getFromTerminalSession();
+        $sessionData->saveData('test.testResult', $chosenAscii);
+        return $asciiCharacters[$chosenAscii] . "\n \nWhat is depicted in this pictograph? §INPUT§";
+    }
+
+    private function getCurrentNumberOfDayTest(): string {
+        $sessionData = SessionData::getFromTerminalSession();
+        $currentDay = (new Carbon())->day;
+        $sessionData->saveData('test.testResult', $currentDay);
+        return "What is the current day of the month? §INPUT§";
+    }
+
+    private static function getDeleteString(int $length, int $pause): string {
+        return str_repeat("§P{$pause}§█§DEL§§DEL§", $length);
     }
 }
