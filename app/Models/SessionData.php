@@ -48,7 +48,7 @@ class SessionData extends Model
     // This function retrieves data from the json field. The data is passed as a key with dot notation and the value must be retrieved from the json field.
     // For example, if the key is 'foo.bar', the json field is {"foo": {"bar": "baz"}}, and the return value should be 'baz'
     // If the value is not found, the function must return null
-    public function getData(string $key) {
+    private function getData(string $key) {
         $data = json_decode($this->data, true);
         $keys = explode('.', $key);
         $currentData = $data;
@@ -65,9 +65,23 @@ class SessionData extends Model
         $globalSession = self::getGlobalSession();
         return $globalSession->getData($key) ?? $default;
     }
+
+    public static function getSessionData(string $key, mixed $default) {
+        $sessionData = self::getFromTerminalSession();
+        return $sessionData->getData($key) ?? $default;
+    }
+    
+    public static function setSessionData(string $key, $value): void {
+        $sessionData = self::getFromTerminalSession();
+        $sessionData->saveData($key, $value);
+    }
+    
+    public static function setGlobalData(string $key, $value): void {
+        $globalSession = self::getGlobalSession();
+        $globalSession->saveData($key, $value);
+    }
     
     public static function getTotalSolvedTests(): int {
         return self::getGlobalData('test.solvedTests', 0);
     }
-
 }
