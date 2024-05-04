@@ -44,12 +44,14 @@ class TerminalCommandController extends Controller
         $body = json_decode($request->getContent());
         $terminalSession = ($body->terminal_session ?? '') ?: uniqid();
 
+        $args = $body->args ?? [];
         $request->session()->put('terminal_session', $terminalSession);
         (new SessionTerminalCommand())->create([
             'terminal_session' => $terminalSession,
             'terminal_command_id' => $terminalCommand->id,
-            'args' => json_encode(request()->all())
+            'args' => json_encode($args),
         ]);
+        $terminalCommand->args = $args;
         return new TerminalCommandResource($terminalCommand);
     }
 
