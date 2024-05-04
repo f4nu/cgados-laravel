@@ -185,7 +185,23 @@ class TerminalCommand extends Model
             SessionData::setSessionData('test.testResult', null);
             $totalSessionTestsUpdated = $totalSessionTests + 1;
             SessionData::setSessionData($dailyTestSessionKey, $totalSessionTestsUpdated);
-            return "Thank you for your input.\n \nThere may be additional tasks available to speed up the redundancy check.§P1000§\n \n \n \n§DC§";
+            $returnPhrase = <<<RET
+Thank you for your input.
+ 
+There may be additional tasks available to speed up the redundancy check.%s§P1000§
+ 
+ 
+ 
+ 
+§DC§
+RET;
+            $additionalPhrase = '';
+            if ($totalSessionTestsUpdated == 3)
+                $additionalPhrase = <<<RET
+ 
+Please take great care in answering the tasks as time cannot yet be rolled back.
+RET;
+            return sprintf($returnPhrase, $additionalPhrase);
         }
 
         return "{$input} is not a recognized command.§DC§";
