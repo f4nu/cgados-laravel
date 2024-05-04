@@ -60,5 +60,14 @@ class SessionData extends Model
         }
         return $currentData;
     }
+    
+    public static function getGlobalData(string $key, mixed $default) {
+        $globalSession = self::getGlobalSession();
+        return $globalSession->getData($key) ?? $default;
+    }
+    
+    public static function getTotalSolvedTests(): int {
+        return self::getGlobalData('test.solvedTests', 0);
+    }
 
 }
