@@ -16,13 +16,31 @@ class TerminalCommand extends Model
 
     public function parseCommand(): string {
         if ($this->command == 'intro')
-            return $this->intro($this->output);
+            return $this->glitchString($this->intro($this->output));
         if ($this->command == 'intro-2')
-            return $this->intro2($this->output);
+            return $this->glitchString($this->intro2($this->output));
         if ($this->command == 'input')
-            return $this->input();
+            return $this->glitchString($this->input());
 
         return $this->output ?? '';
+    }
+    
+    private function glitchString(string $string): string {
+        $glitchCharacters = ['▓', '▒', '░'];
+        $glitchableCharacterRegex = '#[a-mo-zA-Z0-9/_\-~`:,.]#';
+        $glitchChance = 2;
+        $explodedString = explode('§', $string);
+        foreach ($explodedString as &$part) {
+            if (!str_contains($part, ' '))
+                continue;
+                        
+            for ($i = 0; $i < strlen($part); $i++) {
+                if (preg_match($glitchableCharacterRegex, $part[$i]) && rand(0, 100) < $glitchChance)
+                    $part = substr_replace($part, collect($glitchCharacters)->random(), $i, 1);
+            }
+        }
+
+        return implode('§', $explodedString);
     }
 
     public function intro(string $string): string {
@@ -89,6 +107,7 @@ class TerminalCommand extends Model
         $nowRelative = $nowUnix - $startDateUnix;
         $phase4Relative = $phase4DateUnix - $startDateUnix;
         $phase3Relative = $phase3DateUnix - $startDateUnix;
+        
 
         $nowPercentPrecise = $nowRelative * 100 / $endRelative;
         $phase4PercentPrecise = $phase4Relative * 100 / $endRelative;
