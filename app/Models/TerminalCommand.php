@@ -28,7 +28,7 @@ class TerminalCommand extends Model
     private function glitchString(string $string): string {
         $glitchCharacters = ['▓', '▒', '░'];
         $glitchableCharacterRegex = '#[a-mo-zA-Z0-9/_\-~`:,.]#';
-        $glitchChance = 2;
+        $glitchChance = 1;
         $explodedString = explode('§', $string);
         foreach ($explodedString as &$part) {
             if (!str_contains($part, ' '))
