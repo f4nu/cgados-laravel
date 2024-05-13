@@ -251,10 +251,10 @@ RET;
         $testTypes = [
             'equation',
             'ascii',
-            'currentDay',
+            'figlet',
             'pokemon',
         ];
-        $testType = collect($testTypes)->random(); 
+        $testType = collect($testTypes)->random();
 
         switch ($testType) {
             case 'equation':
@@ -265,6 +265,8 @@ RET;
                 return $this->getCurrentNumberOfDayTest();
             case 'pokemon':
                 return $this->getPokemonTest();
+            case 'figlet':
+                return $this->getFigletTest();
         }
 
         return '';
@@ -379,6 +381,23 @@ ASCII,
         }
         
         return $matrix . "\n \nWhich one is not a plausible name for a little monster? §INPUT§";
+    }
+    
+    private function getFigletTest(): string {
+        $figletFonts = ['big', 'shadow', 'slant', 'small', 'smshadow' ,'standard'];
+        $randomFont = collect($figletFonts)->shuffle()->first();
+        $easterEggActive = random_int(1, 100) <= 2;
+        if ($easterEggActive) {
+            $randomFont = 'big';
+            $string = random_int(1, 100) <= 50 ? 'cocco' : 'game';
+            $randomHexString = bin2hex($string);
+        } else {
+            $randomHexString = bin2hex(random_bytes(6));
+        }
+
+        $figletStringFromHex = shell_exec("figlet -f {$randomFont} {$randomHexString}");
+        SessionData::setSessionData('test.testResult', $randomHexString);
+        return "\n" . $figletStringFromHex . "\n \nWhat is depicted in this pseudo-graphical interface? §INPUT§";
     }
 
     private static function getDeleteString(int $length, int $pause): string {
