@@ -250,7 +250,6 @@ RET;
     private function getRandomTest(): string {
         $testTypes = [
             'equation',
-            'ascii',
             'figlet',
             'pokemon',
         ];
