@@ -10,8 +10,12 @@ class SessionData extends Model
     use HasFactory;
     protected $fillable = ['terminal_session', 'data'];
 
+    public static function getTerminalSession(): string {
+        return request()->session()->get('terminal_session');
+    }
+    
     public static function getFromTerminalSession(): self {
-        $terminalSession = request()->session()->get('terminal_session');
+        $terminalSession = self::getTerminalSession();
         return self::firstOrCreate(
             [
                 'terminal_session' => $terminalSession,

@@ -19,6 +19,8 @@ class TerminalCommand extends Model
             return $this->glitchString($this->intro($this->output));
         if ($this->command == 'intro-2')
             return $this->glitchString($this->intro2($this->output));
+        if ($this->command == 'login')
+            return $this->glitchString($this->login($this->output));
         if ($this->command == 'input')
             return $this->glitchString($this->input());
 
@@ -171,6 +173,150 @@ class TerminalCommand extends Model
 
         return sprintf($string, $currentDiskCheckPosition, $totalDiskCheckPosition, $nowPercent, $bar, $footerString);
     }
+    
+    public function login(string $string): string {
+        SessionData::setSessionData('savedCommand', null);
+        
+        $formattedDate = $this->getFormattedNow();
+        $diskSize = 547556790632448;
+        $diskUsed = $diskSize - random_int(24755679063244, 54755679063244);
+        $diskUsedBytes = self::formatBytes($diskUsed);
+        $diskSizeBytes = self::formatBytes($diskSize);
+        return sprintf(
+            $string,
+            $formattedDate,
+            Str::padRight(random_int(100000, 999999) / 100.0, 17),
+            3,
+            Str::padRight("{$diskUsedBytes}/{$diskSizeBytes}", 17),
+            request()->ip(),
+            $this->getTerminalHost()
+        );
+    }
+
+    private static function formatBytes($bytes, $precision = 2): string
+    {
+        $units = array('B', 'KB', 'MB', 'GB', 'TB', 'PB');
+
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+
+        // Uncomment one of the following alternatives
+        $bytes /= pow(1024, $pow);
+        // $bytes /= (1 << (10 * $pow)); 
+
+        return round($bytes, $precision) . $units[$pow];
+    }
+
+    private function getTerminalHost(): string {
+        $isRoot = FALSE;
+        $hostSymbol = $isRoot ? '#' : '$';
+        $terminalSession = SessionData::getTerminalSession();
+        $homeFolder = $this->getHomeFolder();
+        $cwd = $this->getCwd();
+        $cwdToPrint = str_replace($homeFolder, '~', $cwd);
+        return sprintf('%s@cgados:%s%s ', $terminalSession, $cwdToPrint, $hostSymbol); 
+    }
+    
+    private function getHomeFolder(): string {
+        $terminalSession = SessionData::getTerminalSession();
+        return "/home/{$terminalSession}";
+    }
+    
+    private function dirExists(string $directory): ?Directory {
+        /** @var Directory $root */
+        $root = Directory::query()->where('name', '/')->first();
+        if (!$root)
+            return null;
+        
+        if ($directory === '/')
+            return $root;
+
+        $currentTraversal = $root;
+        $pieces = explode('/', $directory);
+        // Discard root
+        array_shift($pieces);
+        while ($currentPiece = array_shift($pieces)) {
+            if ($currentTraversal->children()->where('name', $currentPiece)->doesntExist())
+                return null;
+            
+            $currentTraversal = $currentTraversal->children()->where('name', $currentPiece)->first();
+        }
+        
+        return $currentTraversal;
+    }
+    
+    private function getAbsoluteDirectory(string $directory): string {
+        if ($directory === '/')
+            return $directory;
+        
+        if (Str::endsWith($directory, '/'))
+            $directory = substr($directory, 0, -1);
+        
+        if (Str::startsWith($directory, '/'))
+            return $directory;
+        
+        $cwd = $this->getCwd();
+        return "{$cwd}/{$directory}";
+    }
+    
+    private function changeDirectory(string $directory): string {
+        $directory = preg_replace('#/+#', '/', $directory);
+        $absoluteDirectory = $this->getAbsoluteDirectory($directory);
+        $absoluteDirectory = preg_replace('#/+#', '/', $absoluteDirectory);
+        if (!$this->dirExists($absoluteDirectory))
+            return "cd: {$directory}: No such file or directory";
+        
+        SessionData::setSessionData('terminal.cwd', $absoluteDirectory);
+        return '';
+    }
+    
+    private function getListing(): string {
+        $absoluteDirectory = $this->getAbsoluteDirectory($this->getCwd());
+        $directory = $this->dirExists($absoluteDirectory);
+        if (!$directory)
+            return "ls: cannot access '{$absoluteDirectory}': No such file or directory";
+        
+        $listing = $directory->children()->get();
+        $columns = 15;
+        $rows = ceil($listing->count() / $columns);
+        $arrayChunks = $listing->chunk($rows);        
+        $chunkMaxLengths = [];
+        foreach ($arrayChunks as $chunk) {
+            $maxLength = $chunk->max(fn($item) => strlen($item->name));
+            $maxLength += 2;
+            $chunkMaxLengths[] = $maxLength;
+        }
+
+        $arrayChunks = $arrayChunks->map(fn($a) => $a->values())->toArray();
+        $listingString = '';
+        
+        for ($i = 0; $i < $rows; $i++) {
+            for ($j = 0; $j < $columns; $j++) {
+                if (!isset($arrayChunks[$j][$i]))
+                    continue;
+                
+                $item = $arrayChunks[$j][$i];
+                $listingString .= str_pad($item['name'], $chunkMaxLengths[$j]);
+            }
+            $listingString .= "\n";
+        }
+     
+        
+        return $listingString;
+    }
+    
+    private function getCwd(): string {
+        return SessionData::getSessionData('terminal.cwd', $this->getHomeFolder());
+    }
+    
+    private function getNow(): Carbon {
+        return Carbon::now()->addYears(3369);
+    }
+    
+    private function getFormattedNow(): string {
+        return $this->getNow()->format('D M d Y H:i:s');
+    }
 
     public function input(): string {
         $input = Str::lower(Str::trim($this->args->input));
@@ -227,8 +373,57 @@ Strength is in numbers. The more you solve, the more you thrive.
 RET;
             return sprintf($returnPhrase, $additionalPhrase);
         }
+        
+        $command = preg_match('/^(\S+)(?:\s+(.*))?$/', $input, $matches) ? $matches[1] : '';
+        $args = $matches[2] ?? '';
+        if ($command === '')
+            $toReturn = '';
+        else if ($command === 'date')
+            $toReturn = $this->getFormattedNow();
+        else if ($command === 'pwd')
+            $toReturn = $this->getCwd();
+        else if ($command === 'ls' || $command === 'll')
+            $toReturn = $this->getListing();
+        else if ($command === 'cd')
+            $toReturn = $this->changeDirectory($args ?: $this->getHomeFolder());
+        else if ($command === 'tracert') {
+            $remoteIp = request()->ip();
+            $toReturn = "traceroute to {$remoteIp}, 30 hops max, 3 GB packets";
+            $totalTimeMs = 0;
+            $ipTable = [
+                '192.168.1.1',
+                '10.10.10.1',
+                '172.16.0.1',
+            ];
+            for ($i = 1; $i <= 3; $i++) {
+                $totalTimeMs += rand(1, 1400) / 1000.0;
+                $time1 = number_format($totalTimeMs, 3);
+                $time2 = number_format($totalTimeMs + (rand(100, 200) / 1000.0), 3);
+                $time3 = number_format($totalTimeMs + (rand(200, 300) / 1000.0), 3);
+                $pause = (int)($totalTimeMs * 1000);
+                $pauseString = "§P{$pause}§";
+                $toReturn .= "\n{$i} {$ipTable[$i-1]} ({$ipTable[$i-1]})  {$time1} ms  {$time2} ms  {$time3} ms{$pauseString} ";
+            }
+            $totalTimeMs += 3369 * 365 * 24 * 60 * 60 * 1000;
+            $time1 = (int)$totalTimeMs + 0.0;
+            $time2 = (int)$totalTimeMs + (rand(100, 200) / 1000.0);
+            $time3 = (int)$totalTimeMs + (rand(200, 300) / 1000.0);
+            $toReturn .= "\n** Routing through the CGaDOS gateway **\n{$i} 06;22;44.542:-00;20;44.29  {$time1} ms  {$time2} ms  {$time3} ms§P3000§ ";
 
-        return "{$input} is not a recognized command.§DC§";
+            $i++;
+            $totalTimeMs += rand(1, 1400) / 1000.0;
+            $time1 = (int)$totalTimeMs + 0.0;
+            $time2 = (int)$totalTimeMs + (rand(100, 200) / 1000.0);
+            $time3 = (int)$totalTimeMs + (rand(200, 300) / 1000.0);
+            $toReturn .= "\n{$i} {$remoteIp}  {$time1} ms  {$time2} ms  {$time3} ms";
+        }
+        else if ($command === 'clear' || $input === 'cls')
+            $toReturn = "§CLS§";
+        else
+            $toReturn = "{$command}: command not found";
+
+        $appendToCommand = $this->getTerminalHost() . "§INPUT§";
+        return $toReturn . (!empty($toReturn) ? "\n" : '') . $appendToCommand;
     }
 
     private function getMaxSessionTests(): int {
