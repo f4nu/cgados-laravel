@@ -250,6 +250,17 @@ class TerminalCommand extends Model
         if ($directory === '/')
             return $directory;
         
+        if ($directory === '..') {
+            $cwd = $this->getCwd();
+            $pieces = explode('/', $cwd);
+            array_pop($pieces);
+            $parentDirectory = implode('/', $pieces);
+            if (empty($parentDirectory))
+                return '/';
+            
+            return $parentDirectory;
+        }
+        
         if (Str::endsWith($directory, '/'))
             $directory = substr($directory, 0, -1);
         
