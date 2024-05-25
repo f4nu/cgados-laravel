@@ -260,27 +260,45 @@ class TerminalCommand extends Model
         return "{$cwd}/{$directory}";
     }
     
-    private function changeDirectory(string $directory): string {
-        $directory = preg_replace('#/+#', '/', $directory);
-        $absoluteDirectory = $this->getAbsoluteDirectory($directory);
+    private function getDirectoryOfFile(string $path): Directory|File|null
+    {
+        $path = preg_replace('#/+#', '/', $path);
+        $absoluteDirectory = $this->getAbsoluteDirectory($path);
         $absoluteDirectory = preg_replace('#/+#', '/', $absoluteDirectory);
-        if (!$this->dirExists($absoluteDirectory)) {
-            $pieces = explode('/', $absoluteDirectory);
-            $fileName = array_pop($pieces);
-            $parentDirectory = implode('/', $pieces);
-            $absoluteParentDirectory = $this->getAbsoluteDirectory($parentDirectory);
-            $directoryExists = $this->dirExists($absoluteParentDirectory);
-            if ($directoryExists) {
-                $file = $directoryExists->files()->where('name', $fileName)->first();
-                if ($file)
-                    return "cd: {$fileName}: Not a directory";
-            }
-            
-            return "cd: {$directory}: No such file or directory";
+        $directory = $this->dirExists($absoluteDirectory);
+        if ($directory)
+            return $directory;
+
+        $pieces = explode('/', $absoluteDirectory);
+        $fileName = array_pop($pieces);
+        $parentDirectory = implode('/', $pieces);
+        if (empty($parentDirectory))
+            $parentDirectory = '/';
+        
+        $absoluteParentDirectory = $this->getAbsoluteDirectory($parentDirectory);
+        $directoryExists = $this->dirExists($absoluteParentDirectory);
+        if (!$directoryExists)
+            return null;
+        
+        /** @var File $file */
+        $file = $directoryExists->files()->where('name', $fileName)->first();
+        if ($file)
+            return $file;
+
+        return null;
+    }
+    
+    private function changeDirectory(string $path): string {
+        $entity = $this->getDirectoryOfFile($path);
+        if ($entity instanceof Directory) {
+            SessionData::setSessionData('terminal.cwd', $entity->path());
+            return '';
         }
         
-        SessionData::setSessionData('terminal.cwd', $absoluteDirectory);
-        return '';
+        if ($entity instanceof File)
+            return "cd: {$path}: Not a directory";
+        
+        return "cd: {$path}: No such file or directory";
     }
     
     private function getListing(): string {

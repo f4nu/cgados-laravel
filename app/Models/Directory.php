@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Directory extends Model
 {
+    use HasPath;
+    
     protected $fillable = ['name', 'parent_id'];
     
     public function parent(): BelongsTo

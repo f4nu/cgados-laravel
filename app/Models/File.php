@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class File extends Model
 {
+    use HasPath;
+    
     public function directory(): BelongsTo
     {
         return $this->belongsTo(Directory::class);
