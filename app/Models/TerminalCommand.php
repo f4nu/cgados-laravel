@@ -342,6 +342,16 @@ class TerminalCommand extends Model
         return SessionData::getSessionData('terminal.cwd', $this->getHomeFolder());
     }
     
+    private function getFileContents(string $path): string {
+        $file = $this->getDirectoryOfFile($path);
+        if ($file instanceof File)
+            return $file->content ?? '';
+        else if ($file instanceof Directory)
+            return "cat: {$path}: Is a directory";
+        else
+            return "cat: {$path}: No such file or directory";
+    }
+    
     private function getNow(): Carbon {
         return Carbon::now()->addYears(3369);
     }
@@ -418,6 +428,12 @@ RET;
             $toReturn = $this->getListing();
         else if ($command === 'cd')
             $toReturn = $this->changeDirectory($args ?: $this->getHomeFolder());
+        else if ($command === 'cat') {
+            if (empty($args))
+                $toReturn = "cat: missing file operand";
+            else
+                $toReturn = $this->getFileContents($args);
+        }
         else if ($command === 'tracert') {
             $remoteIp = request()->ip();
             $toReturn = "traceroute to {$remoteIp}, 30 hops max, 3 GB packets";
