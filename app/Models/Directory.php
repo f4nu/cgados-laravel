@@ -19,4 +19,9 @@ class Directory extends Model
     {
         return $this->hasMany(Directory::class, 'parent_id');
     }
+    
+    public function files(): HasMany
+    {
+        return $this->hasMany(File::class);
+    }
 }
