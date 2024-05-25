@@ -264,8 +264,20 @@ class TerminalCommand extends Model
         $directory = preg_replace('#/+#', '/', $directory);
         $absoluteDirectory = $this->getAbsoluteDirectory($directory);
         $absoluteDirectory = preg_replace('#/+#', '/', $absoluteDirectory);
-        if (!$this->dirExists($absoluteDirectory))
+        if (!$this->dirExists($absoluteDirectory)) {
+            $pieces = explode('/', $absoluteDirectory);
+            $fileName = array_pop($pieces);
+            $parentDirectory = implode('/', $pieces);
+            $absoluteParentDirectory = $this->getAbsoluteDirectory($parentDirectory);
+            $directoryExists = $this->dirExists($absoluteParentDirectory);
+            if ($directoryExists) {
+                $file = $directoryExists->files()->where('name', $fileName)->first();
+                if ($file)
+                    return "cd: {$fileName}: Not a directory";
+            }
+            
             return "cd: {$directory}: No such file or directory";
+        }
         
         SessionData::setSessionData('terminal.cwd', $absoluteDirectory);
         return '';
