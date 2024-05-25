@@ -274,10 +274,12 @@ class TerminalCommand extends Model
     private function getListing(): string {
         $absoluteDirectory = $this->getAbsoluteDirectory($this->getCwd());
         $directory = $this->dirExists($absoluteDirectory);
-        if (!$directory)
+        if (!$directory) 
             return "ls: cannot access '{$absoluteDirectory}': No such file or directory";
         
-        $listing = $directory->children()->get();
+        $listing = $directory->children()->get()->values()
+            ->concat($directory->files()->get()->values())
+            ->sort(fn($a, $b) => $a->name <=> $b->name);
         $columns = 15;
         $rows = ceil($listing->count() / $columns);
         $arrayChunks = $listing->chunk($rows);        
