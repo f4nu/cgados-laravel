@@ -37,7 +37,7 @@ class TerminalCommand extends Model
                 continue;
                         
             for ($i = 0; $i < strlen($part); $i++) {
-                if (preg_match($glitchableCharacterRegex, $part[$i]) && rand(0, 100) < $glitchChance)
+                if (preg_match($glitchableCharacterRegex, $part[$i]) && rand(0, 100) < $glitchChance && rand(0, 100) < $glitchChance * 10)
                     $part = substr_replace($part, collect($glitchCharacters)->random(), $i, 1);
             }
         }
@@ -186,7 +186,7 @@ class TerminalCommand extends Model
             $string,
             $formattedDate,
             Str::padRight(random_int(100000, 999999) / 100.0, 17),
-            3,
+            SessionTerminalCommand::activeTerminalSessionsCount(),
             Str::padRight("{$diskUsedBytes}/{$diskSizeBytes}", 17),
             request()->ip(),
             $this->getTerminalHost()
@@ -209,7 +209,7 @@ class TerminalCommand extends Model
     }
 
     private function getTerminalHost(): string {
-        $isRoot = FALSE;
+        $isRoot = SessionData::getSessionData('isRoot', false);
         $hostSymbol = $isRoot ? '#' : '$';
         $terminalSession = SessionData::getTerminalSession();
         $homeFolder = $this->getHomeFolder();
@@ -321,7 +321,7 @@ class TerminalCommand extends Model
         $listing = $directory->children()->get()->values()
             ->concat($directory->files()->get()->values())
             ->sort(fn($a, $b) => $a->name <=> $b->name);
-        $columns = 15;
+        $columns = 9;
         $rows = ceil($listing->count() / $columns);
         $arrayChunks = $listing->chunk($rows);        
         $chunkMaxLengths = [];
@@ -364,7 +364,11 @@ class TerminalCommand extends Model
     }
     
     private function getNow(): Carbon {
-        return Carbon::now()->addYears(3369);
+        return Carbon::now()->addYears($this->getYearsToAdd());
+    }
+    
+    private function getYearsToAdd(): int {
+        return 3369;
     }
     
     private function getFormattedNow(): string {
@@ -372,7 +376,8 @@ class TerminalCommand extends Model
     }
 
     public function input(): string {
-        $input = Str::lower(Str::trim($this->args->input));
+        $originalInput = $this->args->input;
+        $input = Str::lower(Str::trim($originalInput));
         $savedCommand = SessionData::getSessionData('savedCommand', null);
         $dailyTestSessionKey = $this->getSessionTestKey();
         $totalSessionTests = SessionData::getSessionData($dailyTestSessionKey, 0);
@@ -429,59 +434,122 @@ RET;
         
         $command = preg_match('/^(\S+)(?:\s+(.*))?$/', $input, $matches) ? $matches[1] : '';
         $args = $matches[2] ?? '';
-        if ($command === '')
-            $toReturn = '';
-        else if ($command === 'date')
-            $toReturn = $this->getFormattedNow();
-        else if ($command === 'pwd')
-            $toReturn = $this->getCwd();
-        else if ($command === 'ls' || $command === 'll')
-            $toReturn = $this->getListing();
-        else if ($command === 'cd')
-            $toReturn = $this->changeDirectory($args ?: $this->getHomeFolder());
-        else if ($command === 'cat') {
-            if (empty($args))
-                $toReturn = "cat: missing file operand";
-            else
-                $toReturn = $this->getFileContents($args);
-        }
-        else if ($command === 'tracert') {
-            $remoteIp = request()->ip();
-            $toReturn = "traceroute to {$remoteIp}, 30 hops max, 3 GB packets";
-            $totalTimeMs = 0;
-            $ipTable = [
-                '192.168.1.1',
-                '10.10.10.1',
-                '172.16.0.1',
-            ];
-            for ($i = 1; $i <= 3; $i++) {
-                $totalTimeMs += rand(1, 1400) / 1000.0;
-                $time1 = number_format($totalTimeMs, 3);
-                $time2 = number_format($totalTimeMs + (rand(100, 200) / 1000.0), 3);
-                $time3 = number_format($totalTimeMs + (rand(200, 300) / 1000.0), 3);
-                $pause = (int)($totalTimeMs * 1000);
-                $pauseString = "§P{$pause}§";
-                $toReturn .= "\n{$i} {$ipTable[$i-1]} ({$ipTable[$i-1]})  {$time1} ms  {$time2} ms  {$time3} ms{$pauseString} ";
+        
+        $appendHostAndInput = TRUE;
+        if (SessionData::getSessionData('waitingForSuInput', false)) {
+            SessionData::setSessionData('waitingForSuInput', null);
+            $password = $originalInput;
+            if ($password !== 'password')
+                $toReturn = '§P3000§ §DEL§su: Authentication failure';
+            else {
+                SessionData::setSessionData('isRoot', true);
+                $toReturn = "§CLS§OK";
             }
-            $totalTimeMs += 3369 * 365 * 24 * 60 * 60 * 1000;
-            $time1 = (int)$totalTimeMs + 0.0;
-            $time2 = (int)$totalTimeMs + (rand(100, 200) / 1000.0);
-            $time3 = (int)$totalTimeMs + (rand(200, 300) / 1000.0);
-            $toReturn .= "\n** Routing through the CGaDOS gateway **\n{$i} 06;22;44.542:-00;20;44.29  {$time1} ms  {$time2} ms  {$time3} ms§P3000§ ";
+        } else {
 
-            $i++;
-            $totalTimeMs += rand(1, 1400) / 1000.0;
-            $time1 = (int)$totalTimeMs + 0.0;
-            $time2 = (int)$totalTimeMs + (rand(100, 200) / 1000.0);
-            $time3 = (int)$totalTimeMs + (rand(200, 300) / 1000.0);
-            $toReturn .= "\n{$i} {$remoteIp}  {$time1} ms  {$time2} ms  {$time3} ms";
+            if ($command === '')
+                $toReturn = '';
+            else if ($command === 'date')
+                $toReturn = $this->getFormattedNow();
+            else if ($command === 'pwd')
+                $toReturn = $this->getCwd();
+            else if ($command === 'ls' || $command === 'll')
+                $toReturn = $this->getListing();
+            else if ($command === 'cd')
+                $toReturn = $this->changeDirectory($args ?: $this->getHomeFolder());
+            else if ($command === 'cat') {
+                if (empty($args))
+                    $toReturn = "cat: missing file operand";
+                else
+                    $toReturn = $this->getFileContents($args);
+            } else if ($command === 'get') {
+                if (empty($args))
+                    $toReturn = "get: missing operand";
+                else {
+                    if (!SessionData::getSessionData('interlope', false))
+                        $toReturn = "get: could not connect to server {$args}";
+                    else {
+                        if ($args !== 's.interlope.pull:27015')
+                            $toReturn = "get: 1could not connect to server {$args}";
+                        else
+                            $toReturn = $this->getInterlopeDemo($args);
+                    }
+                }
+            } else if ($originalInput === 'INTERLOPE') {
+                $toReturn = "Unknown command: INTERLOPE";
+                SessionData::setSessionData('interlope', true);
+            } else if ($command === 'su') {
+                if (SessionData::getSessionData('isRoot', false))
+                    $toReturn = "su: cannot su to root";
+                else {
+                    SessionData::setSessionData('waitingForSuInput', true);
+                    $toReturn = "Password: §HIDDEN§";
+                    $appendHostAndInput = FALSE;
+                }
+            } else if ($command === 'exit') {
+                if (SessionData::getSessionData('isRoot', false)) {
+                    SessionData::setSessionData('isRoot', false);
+                    $toReturn = "§CLS§";
+                } else {
+                    $toReturn = "§DC§";
+                    $appendHostAndInput = FALSE;
+                }
+            } else if ($command === 'who') {
+                $sessions = SessionTerminalCommand::activeTerminalSessions();
+                $sessionIds = $sessions->map(function ($session) {
+                    $firstLogin = SessionTerminalCommand::query()->where('terminal_session', $session->terminal_session)->orderBy('created_at', 'asc')->first();
+                    $terminalType = 'pts';
+                    $append = $terminalType === 'pts' ? '(:0.0)' : '(:0)';
+                    return Str::padRight($session->terminal_session, 25) . Str::padRight($terminalType, 10) . ' ' . $firstLogin->created_at->copy()->addYears(self::getYearsToAdd())->format('Y-m-d H:i') . " {$append}";
+                });
+                $fixedSession = Str::padRight('pf-cgados-229e21ad', 25) . Str::padRight('tty', 10) . ' ' . (new Carbon('2011-04-22 19:11:45'))->format('Y-m-d H:i') . " (:0)";
+                $toReturn = "{$fixedSession}\n" . $sessionIds->implode("\n");
+            } else if ($command === 'tracert') {
+                $remoteIp = request()->ip();
+                $toReturn = "traceroute to {$remoteIp}, 30 hops max, 3 GB packets";
+                $totalTimeMs = 0;
+                $ipTable = [
+                    '192.168.1.1',
+                    '10.13.10.1',
+                    '172.16.0.1',
+                ];
+                for ($i = 1; $i <= 3; $i++) {
+                    $totalTimeMs += rand(1, 1400) / 1000.0;
+                    $time1 = number_format($totalTimeMs, 3);
+                    $time2 = number_format($totalTimeMs + (rand(100, 200) / 1000.0), 3);
+                    $time3 = number_format($totalTimeMs + (rand(200, 300) / 1000.0), 3);
+                    $pause = (int)($totalTimeMs * 1000);
+                    $pauseString = "§P{$pause}§";
+                    $toReturn .= "\n{$i} {$ipTable[$i-1]} ({$ipTable[$i-1]})  {$time1} ms  {$time2} ms  {$time3} ms{$pauseString} ";
+                }
+                $totalTimeMs += 3369 * 365 * 24 * 60 * 60 * 1000;
+                $time1 = (int)$totalTimeMs + 0.0;
+                $time2 = (int)$totalTimeMs + (rand(100, 200) / 1000.0);
+                $time3 = (int)$totalTimeMs + (rand(200, 300) / 1000.0);
+                $toReturn .= "\n** Routing through the CGaDOS gateway **\n{$i} 06h 22m 44.542s −00° 20′ 44.29″  {$time1} ms  {$time2} ms  {$time3} ms§P3000§ ";
+
+                $i++;
+                $totalTimeMs += rand(1, 1400) / 1000.0;
+                $time1 = (int)$totalTimeMs + 0.0;
+                $time2 = (int)$totalTimeMs + (rand(100, 200) / 1000.0);
+                $time3 = (int)$totalTimeMs + (rand(200, 300) / 1000.0);
+                $toReturn .= "\n{$i} {$remoteIp}  {$time1} ms  {$time2} ms  {$time3} ms";
+            } else if ($command === 'clear' || $input === 'cls')
+                $toReturn = "§CLS§";
+            else
+                $toReturn = "{$command}: command not found";
         }
-        else if ($command === 'clear' || $input === 'cls')
-            $toReturn = "§CLS§";
-        else
-            $toReturn = "{$command}: command not found";
+        
+        if ($originalInput !== 'INTERLOPE')
+            SessionData::setSessionData('interlope', null);
+        else if ($command !== 'su')
+            SessionData::setSessionData('waitingForSuInput', null);
 
-        $appendToCommand = $this->getTerminalHost() . "§INPUT§";
+        if ($appendHostAndInput)
+            $appendToCommand = $this->getTerminalHost() . "§INPUT§";
+        else 
+            $appendToCommand = '';
+        
         return $toReturn . (!empty($toReturn) ? "\n" : '') . $appendToCommand;
     }
 
@@ -655,5 +723,9 @@ ASCII,
 
     private static function getDeleteString(int $length, int $pause): string {
         return str_repeat("§P{$pause}§█§DEL§§DEL§", $length);
+    }
+    
+    private function getInterlopeDemo(): string {
+        return "OK";
     }
 }

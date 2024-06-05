@@ -36,6 +36,12 @@ return [
             'throw' => false,
         ],
 
+        'email' => [
+            'driver' => 'local',
+            'root' => storage_path('email'),
+            'throw' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

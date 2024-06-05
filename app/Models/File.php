@@ -10,6 +10,12 @@ class File extends Model
 {
     use HasPath;
     
+    protected $fillable = [
+        'name',
+        'content',
+        'directory_id'
+    ];
+    
     public function directory(): BelongsTo
     {
         return $this->belongsTo(Directory::class);
