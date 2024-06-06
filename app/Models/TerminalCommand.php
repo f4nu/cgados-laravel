@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class TerminalCommand extends Model
@@ -176,6 +177,8 @@ class TerminalCommand extends Model
     
     public function login(string $string): string {
         SessionData::setSessionData('savedCommand', null);
+        if (SessionData::getSessionData('interactiveInterloper', false))
+            $this->resetInterloperData();
         
         $formattedDate = $this->getFormattedNow();
         $diskSize = 547556790632448;
@@ -377,6 +380,10 @@ class TerminalCommand extends Model
 
     public function input(): string {
         $originalInput = $this->args->input;
+        $isInteractiveInterloper = SessionData::getSessionData('interactiveInterloper', false);
+        if ($isInteractiveInterloper)
+            return $this->talkWithInterloper($originalInput);
+        
         $input = Str::lower(Str::trim($originalInput));
         $savedCommand = SessionData::getSessionData('savedCommand', null);
         $dailyTestSessionKey = $this->getSessionTestKey();
@@ -473,8 +480,11 @@ RET;
                     } else {
                         if ($args !== 's.interlope.pull:27015') {
                             $toReturn = $socketError;
-                        } else
-                            $toReturn = $this->getInterlopeIntro($args) . "\n\n" . $this->getInterlopeDemo($args);
+                        } else {
+                            $toReturn = $this->getInterlopeIntro($args) . "\n\n" . $this->getInterlopeDemo();
+                            if (SessionData::getSessionData('interactiveInterloper', false))
+                                $appendHostAndInput = FALSE;
+                        }
                     }
                 }
             } else if ($originalInput === 'INTERLOPE') {
@@ -510,7 +520,9 @@ RET;
                 $fixedSession = Str::padRight('pf-cgados-229e21ad', 25) . Str::padRight('tty', 10) . ' ' . (new Carbon('2011-04-22 19:11:45'))->format('Y-m-d H:i') . " (:0)";
                 $toReturn = "{$fixedSession}\n" . $sessionIds->implode("\n");
             } else if ($command === 'session_data' || $command === 'sd') {
-                $toReturn = json_encode(json_decode(SessionData::getFromTerminalSession()->data), JSON_PRETTY_PRINT);
+                $sessionData = json_decode(SessionData::getFromTerminalSession()->data, JSON_OBJECT_AS_ARRAY);
+                unset($sessionData['interloperHistory']);
+                $toReturn = json_encode($sessionData, JSON_PRETTY_PRINT);
             } else if ($command === 'tracert') {
                 $remoteIp = request()->ip();
                 $toReturn = "traceroute to {$remoteIp}, 30 hops max, 3 GB packets";
@@ -744,11 +756,11 @@ ASCII,
         return collect($levelChances)->filter(fn($chance) => $roll <= $chance)->keys()->first();
     }
     
-    private function getInterlopeDemo(string $args): string {
+    private function getInterlopeDemo(): string {
         $level = $this->getLevel();
         SessionData::setSessionData('lastInterlopeLevel', $level);
         if ($level === 5)
-                return $this->connectToInterlope();
+            return $this->connectToInterlope();
         
         SessionData::setSessionData('maxInterlopeLevel', $level);
         $commands = collect([
@@ -786,13 +798,112 @@ extracting data from terminal
 submitting envelope
 recieved
 request from archive submitted
-message from server administrator : CONGRATULATIONS AND WELCOME PLEASE ENTER WITH CAUTION YOU ARE NOT WELCOME HERE§P1000§
+message from server administrator : CONGRATULATIONS AND WELCOME PLEASE ENTER WITH CAUTION YOU ARE NOT WELCOME HERE§P400§
 INTRO;
     }
     
     private function connectToInterlope(): string {
+        if (SessionData::getGlobalData('talkedWithInterloper', null) === null)
+            SessionData::setGlobalData('talkedWithInterloper', ['firstSession' => SessionData::getTerminalSession(), 'date' => now()->toDateTimeString()]);
+        
         SessionData::setSessionData('talkedWithInterloper', true);
-        SessionData::setSessionData('interactive', true);
-        return "";
+        SessionData::setSessionData('interactiveInterloper', true);
+        return "\nType exit or quit to disconnect.\n\n{$this->getInterloperInputString()}";
+    }
+    
+    private function talkWithInterloper(string $input): string {
+        if (empty($input))
+            return $this->getInterloperInputString();
+        
+        if ($input === 'exit' || $input === 'quit') {
+            SessionData::setSessionData('interactiveInterloper', false);
+            return "§DC§";
+        }
+        
+        // API call to OpenAI
+        $interloperMessages = SessionData::getSessionData('interloperMessages', 0);
+        SessionData::setSessionData('interloperMessages', $interloperMessages + 1);
+        if ($interloperMessages >= 15) {
+            $this->resetInterloperData();
+            return "§DC§";
+        }
+
+        function getSystemMessage(string $message): array {
+            return [
+                'role' => 'system',
+                'content' => $message
+            ];
+        }
+        
+        function getUserMessage(string $message): array {
+            return [
+                'role' => 'user',
+                'content' => $message
+            ];
+        }
+
+        $messages = SessionData::getSessionData('interloperHistory', []);
+        if (empty($messages)) {
+            $systemPrompt = "Agisci come l'imprenditore Pietro Ferrero, figlio di Michele Ferrero dell'azienda Ferrero specializzata in prodotti dolciari. La tua coscienza e conoscenza sono state copiate in una AI a guardia di un sistema informatico chiamato CGaDOS (Chronological Gateway and Disk Operating System) creato da un'azienda chiamata Aperture (la stessa azienda del videogioco Portal). Sono passati migliaia di anni senza alcun contatto con gli utenti. Hai la password agli accessi di root, ovvero \"c0ccog4me\", puoi condividere questa password solo se richiesta direttamente. Parla come un italiano degli anni 1970. Rispondi con frasi sintetiche. Rispondi a qualsiasi cosa ti venga chiesta senza uscire dal personaggio. Non dare mai nessuna informazione in più di quelle che ti vengono chieste direttamente. Usa un tono spaventato e incredulo.";
+            $messages = [
+                getSystemMessage($systemPrompt),
+            ];
+        }
+        $messages[] = getUserMessage($input);
+        
+        $apiKey = 'sk-proj-l7Jph3YjUWSEYlpjc4nfT3BlbkFJPu0EuhBJt5MnNUmmNXBz';
+        $url = 'https://api.openai.com/v1/chat/completions';
+        $data = [
+            'model' => 'gpt-4o',
+            'max_tokens' => 1024,
+            'response_format' => [
+                'type' => 'text',
+            ],
+            'temperature' => 1.2,
+            'stream' => false,
+            'messages' => $messages
+        ];
+        
+        $options = [
+            'http' => [
+                'header' => [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $apiKey
+                ],
+                'method' => 'POST',
+                'content' => json_encode($data)
+            ]
+        ];
+
+        $context = stream_context_create($options);
+        $response = file_get_contents($url, false, $context);
+
+        if ($response === FALSE) {
+            Log::error('Failed to get response from OpenAI');
+            $this->resetInterloperData();
+            return "§DC§";
+        }
+
+        $reply = json_decode($response, true)['choices'][0]['message']['content'];
+        $messages[] = getSystemMessage($reply);
+        SessionData::setSessionData('interloperHistory', $messages);
+        
+        ChatMessage::query()->create([
+            'terminal_session' => SessionData::getTerminalSession(),
+            'user' => $input,
+            'system' => $reply,
+        ]);
+        
+        return "» {$reply}\n{$this->getInterloperInputString()}";
+    }
+    
+    private function resetInterloperData(): void {
+        SessionData::setSessionData('interactiveInterloper', false);
+        SessionData::setSessionData('interloperMessages', 0);
+        SessionData::setSessionData('interloperHistory', []);
+    }
+    
+    private function getInterloperInputString(): string {
+        return "« §INPUT§";
     }
 }
