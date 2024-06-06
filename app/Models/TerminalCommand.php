@@ -439,14 +439,15 @@ RET;
         if (SessionData::getSessionData('waitingForSuInput', false)) {
             SessionData::setSessionData('waitingForSuInput', null);
             $password = $originalInput;
-            if ($password !== 'password')
+            if ($password !== 'c0ccog4me') {
                 $toReturn = '§P3000§ §DEL§su: Authentication failure';
-            else {
+                $authenticationTries = SessionData::getSessionData('authenticationTries', 0);
+                SessionData::setSessionData('authenticationTries', $authenticationTries + 1);
+            } else {
                 SessionData::setSessionData('isRoot', true);
                 $toReturn = "§CLS§OK";
             }
         } else {
-
             if ($command === '')
                 $toReturn = '';
             else if ($command === 'date')
@@ -466,13 +467,14 @@ RET;
                 if (empty($args))
                     $toReturn = "get: missing operand";
                 else {
-                    if (!SessionData::getSessionData('interlope', false))
-                        $toReturn = "get: could not connect to server {$args}";
-                    else {
-                        if ($args !== 's.interlope.pull:27015')
-                            $toReturn = "get: 1could not connect to server {$args}";
-                        else
-                            $toReturn = $this->getInterlopeDemo($args);
+                    $socketError = "getting socket for {$args}...§P500§\n\nget: could not connect to server {$args}";
+                    if (!SessionData::getSessionData('interlope', false)) {
+                        $toReturn = $socketError;
+                    } else {
+                        if ($args !== 's.interlope.pull:27015') {
+                            $toReturn = $socketError;
+                        } else
+                            $toReturn = $this->getInterlopeIntro($args) . "\n\n" . $this->getInterlopeDemo($args);
                     }
                 }
             } else if ($originalInput === 'INTERLOPE') {
@@ -499,11 +501,16 @@ RET;
                 $sessionIds = $sessions->map(function ($session) {
                     $firstLogin = SessionTerminalCommand::query()->where('terminal_session', $session->terminal_session)->orderBy('created_at', 'asc')->first();
                     $terminalType = 'pts';
-                    $append = $terminalType === 'pts' ? '(:0.0)' : '(:0)';
-                    return Str::padRight($session->terminal_session, 25) . Str::padRight($terminalType, 10) . ' ' . $firstLogin->created_at->copy()->addYears(self::getYearsToAdd())->format('Y-m-d H:i') . " {$append}";
+                    $append = '(:0.0)';
+                    $paddedTerminalSession = Str::padRight($session->terminal_session, 25);
+                    $paddedTerminalType = Str::padRight($terminalType, 10);
+                    $formattedFirstLoginDate = $firstLogin->created_at->copy()->addYears(self::getYearsToAdd())->format('Y-m-d H:i');
+                    return "{$paddedTerminalSession}{$paddedTerminalType}{$formattedFirstLoginDate}{$append}";
                 });
                 $fixedSession = Str::padRight('pf-cgados-229e21ad', 25) . Str::padRight('tty', 10) . ' ' . (new Carbon('2011-04-22 19:11:45'))->format('Y-m-d H:i') . " (:0)";
                 $toReturn = "{$fixedSession}\n" . $sessionIds->implode("\n");
+            } else if ($command === 'session_data' || $command === 'sd') {
+                $toReturn = json_encode(json_decode(SessionData::getFromTerminalSession()->data), JSON_PRETTY_PRINT);
             } else if ($command === 'tracert') {
                 $remoteIp = request()->ip();
                 $toReturn = "traceroute to {$remoteIp}, 30 hops max, 3 GB packets";
@@ -725,7 +732,67 @@ ASCII,
         return str_repeat("§P{$pause}§█§DEL§§DEL§", $length);
     }
     
-    private function getInterlopeDemo(): string {
-        return "OK";
+    private function getLevel(): int {
+        $levelChances = [
+            1 => 60,
+            2 => 80,
+            3 => 90,
+            4 => 99,
+            5 => 100,
+        ];
+        $roll = rand(1, 100);
+        return collect($levelChances)->filter(fn($chance) => $roll <= $chance)->keys()->first();
+    }
+    
+    private function getInterlopeDemo(string $args): string {
+        $level = $this->getLevel();
+        SessionData::setSessionData('lastInterlopeLevel', $level);
+        if ($level === 5)
+                return $this->connectToInterlope();
+        
+        SessionData::setSessionData('maxInterlopeLevel', $level);
+        $commands = collect([
+            'x',
+            'y',
+            'z',
+            'MOUSE1',
+            'MOUSE2',
+            'W',
+            'A',
+            'S',
+            'D',
+            'SPACE',
+            'SHIFT',
+            'CTRL',
+            'ALT',
+        ]);
+        $lines = [];
+        $totalLines = rand(5, 15) * $level;
+        for ($i = 0; $i <= $totalLines; $i++) {
+            $line = '';
+            for ($j = 0; $j <= rand(1, $level); $j++) {
+                $command = $commands->random();
+                $commandData = rand(1, 100) / rand(1, 100);
+                $line .= "{$command}{$commandData}";
+            }
+            $lines[] = $line;
+        }
+        return implode("\n", $lines);
+    }
+    
+    private function getInterlopeIntro(string $args): string {
+        return <<<INTRO
+extracting data from terminal
+submitting envelope
+recieved
+request from archive submitted
+message from server administrator : CONGRATULATIONS AND WELCOME PLEASE ENTER WITH CAUTION YOU ARE NOT WELCOME HERE§P1000§
+INTRO;
+    }
+    
+    private function connectToInterlope(): string {
+        SessionData::setSessionData('talkedWithInterloper', true);
+        SessionData::setSessionData('interactive', true);
+        return "";
     }
 }
