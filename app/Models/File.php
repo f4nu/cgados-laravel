@@ -13,11 +13,16 @@ class File extends Model
     protected $fillable = [
         'name',
         'content',
-        'directory_id'
+        'directory_id',
+        'public',
     ];
     
     public function directory(): BelongsTo
     {
         return $this->belongsTo(Directory::class);
+    }
+    
+    public function canBeAccessed(): bool {
+        return $this->public || SessionData::getSessionData('isRoot', false);
     }
 }

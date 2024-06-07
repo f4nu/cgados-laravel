@@ -10,7 +10,7 @@ class Directory extends Model
 {
     use HasPath;
     
-    protected $fillable = ['name', 'parent_id'];
+    protected $fillable = ['name', 'parent_id', 'public'];
     
     public function parent(): BelongsTo
     {
@@ -25,5 +25,9 @@ class Directory extends Model
     public function files(): HasMany
     {
         return $this->hasMany(File::class);
+    }
+    
+    public function canBeAccessed(): bool {
+        return $this->public || SessionData::getSessionData('isRoot', false);
     }
 }

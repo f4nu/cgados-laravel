@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
 
 class TerminalCommandController extends Controller
 {
@@ -40,6 +41,14 @@ class TerminalCommandController extends Controller
      * Display the specified resource.
      */
     public function show(Request $request, string $command): TerminalCommandResource {
+        if ($command === 'intro')
+            $command = 'intro-2';
+        
+        if ($command === 'intro-2') {
+            if (TerminalCommand::getNowPercentPrecise() >= 100)
+                $command = 'login';
+        }
+        
         $terminalCommand = TerminalCommand::where('command', $command)->where('enabled', 1)->firstOrFail();
         $body = json_decode($request->getContent());
         $terminalSession = ($body->terminal_session ?? '') ?: uniqid();

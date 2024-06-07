@@ -1,0 +1,18 @@
+Subject: Unauthorized Access to Project INTERLOPER Server
+From: Margaret Collins <margaret.collins@valve.aperture.int>
+To: all.staff@valve.aperture.int
+Date: 2006-03-30 09:15:45
+
+Dear Team,
+
+It has come to our attention that there has been an unauthorized connection to the server. This individual has managed to access the data without the required physical interface, and we are currently unsure how this breach occurred.
+
+Given the sensitive nature of Project and the potential risks involved, we need immediate action to identify and secure the access point used by the intruder. Please suspend all non-essential operations and report any anomalies you may have observed in the system logs over the past 24 hours.
+
+We'll need to convene an emergency meeting to discuss our response strategy. Janet in Security and Mike from the IT department, please meet me in Conference Room B at 10:00 AM. Everyone else, remain on high alert and ensure all security protocols are rigorously followed.
+
+We must get to the bottom of this immediately.
+
+Best regards,
+Margaret Collins
+Lead Systems Engineer

@@ -46,7 +46,7 @@ class TerminalCommand extends Model
         return implode('§', $explodedString);
     }
 
-    public function intro(string $string): string {
+    public function intro(string $string): string {        
         $startDate = '2024-04-06';
         $endDate = '2025-05-22';
         $pinDate = '2024-05-22';
@@ -95,65 +95,20 @@ class TerminalCommand extends Model
     }
 
     public function intro2(string $string): string {
-        $startDate = '2024-04-06';
-        $phase3Date = '2024-05-05';
-        $phase4Date = '2024-06-08';
-        $endDate = '2025-05-22';
-
-        $startDateUnix = (new Carbon($startDate))->unix();
-        $endDateUnix = (new Carbon($endDate))->unix();
-        $nowUnix = (new Carbon())->unix();
-        $phase4DateUnix = (new Carbon($phase4Date))->unix();
-        $phase3DateUnix = (new Carbon($phase3Date))->unix();
-
-        $endRelative = $endDateUnix - $startDateUnix;
-        $nowRelative = $nowUnix - $startDateUnix;
-        $phase4Relative = $phase4DateUnix - $startDateUnix;
-        $phase3Relative = $phase3DateUnix - $startDateUnix;
-        
-
-        $nowPercentPrecise = $nowRelative * 100 / $endRelative;
-        $phase4PercentPrecise = $phase4Relative * 100 / $endRelative;
-        
-        $modifier = 1.5;
-        $barMax = 100 / $modifier;
-        $emptyCharacter = '░';
-        $fullCharacter = '█';
-
-        // 75 possibilità al giorno
-        // differenza tra il 5/5 e il 8/6 = 34 giorni
-        $daysDifference = (new Carbon($phase3Date))->diffInDays($phase4Date);
-        // 34 * 75 = 2550
-        $oneStep = (100 - $phase4PercentPrecise) / ($daysDifference * 75);
-        
-        $totalSolvedTests = SessionData::getTotalSolvedTests();
-        $percentToAdd = $totalSolvedTests * $oneStep;
-        $nowPercentPrecise += $percentToAdd;
+        $nowPercentPrecise = TerminalCommand::getNowPercentPrecise();
 
         $totalDiskCheckPosition = 547556790632448;
         $currentDiskCheckPosition = (int)($totalDiskCheckPosition / $nowPercentPrecise);
         
-        if (request()->get('letHimDebug', false)) {
-            dd([
-                'testsPerDay' => $this->getMaxGlobalTests(),
-                'testsPerDayEach' => $this->getMaxSessionTests(),
-                'nowPercentUnmodified' => $nowRelative * 100 / $endRelative,
-                'nowPercentPrecise' => $nowPercentPrecise,
-                'nowUntilP3Percent' => ($phase3Relative * 100 / $endRelative) - ($nowRelative * 100 / $endRelative),
-                'nowUntilP4Percent' => $phase4PercentPrecise - ($nowRelative * 100 / $endRelative),
-                'oneStep' => $oneStep,
-                'phase4PercentPrecise' => $phase4PercentPrecise,
-                'totalSolvedTests' => $totalSolvedTests,
-                'totalRemainingTests' => 2550 - $totalSolvedTests,
-                'totalTestsEstimated' => $this->getMaxGlobalTests() * $daysDifference,
-                'percentToAdd' => $percentToAdd,
-                'currentDiskCheckPosition' => $currentDiskCheckPosition,
-            ]);
-        }
-
         $nowPercent = (int)(($nowPercentPrecise) * 1000) / 1000;
         if ($nowPercent > 100)
             $nowPercent = 100;
+
+        $modifier = 1.5;
+        $barMax = 100 / $modifier;
+        $emptyCharacter = '░';
+        $fullCharacter = '█';
+        
         $bar = '[';
         for ($i = 1; $i <= $barMax; $i++) {
             if ($i <= $nowPercent / $modifier)
@@ -209,6 +164,57 @@ class TerminalCommand extends Model
         // $bytes /= (1 << (10 * $pow)); 
 
         return round($bytes, $precision) . $units[$pow];
+    }
+    
+    public static function getNowPercentPrecise(): float {
+        $startDate = '2024-04-06';
+        $phase3Date = '2024-05-05';
+        $phase4Date = '2024-06-08';
+        $endDate = '2025-05-22';
+
+        $startDateUnix = (new Carbon($startDate))->unix();
+        $endDateUnix = (new Carbon($endDate))->unix();
+        $nowUnix = (new Carbon())->unix();
+        $phase4DateUnix = (new Carbon($phase4Date))->unix();
+        $phase3DateUnix = (new Carbon($phase3Date))->unix();
+
+        $endRelative = $endDateUnix - $startDateUnix;
+        $nowRelative = $nowUnix - $startDateUnix;
+        $phase4Relative = $phase4DateUnix - $startDateUnix;
+        $phase3Relative = $phase3DateUnix - $startDateUnix;
+
+
+        $nowPercentPrecise = $nowRelative * 100 / $endRelative;
+        $phase4PercentPrecise = $phase4Relative * 100 / $endRelative;
+        
+        // 75 possibilità al giorno
+        // differenza tra il 5/5 e il 8/6 = 34 giorni
+        $daysDifference = (new Carbon($phase3Date))->diffInDays($phase4Date);
+        // 34 * 75 = 2550
+        $oneStep = (100 - $phase4PercentPrecise) / ($daysDifference * 75);
+
+        $totalSolvedTests = SessionData::getTotalSolvedTests();
+        $percentToAdd = $totalSolvedTests * $oneStep;
+        $nowPercentPrecise += $percentToAdd;
+
+        if (request()->get('letHimDebug', false)) {
+            dd([
+                'testsPerDay' => self::getMaxGlobalTests(),
+                'testsPerDayEach' => self::getMaxSessionTests(),
+                'nowPercentUnmodified' => $nowRelative * 100 / $endRelative,
+                'nowPercentPrecise' => $nowPercentPrecise,
+                'nowUntilP3Percent' => ($phase3Relative * 100 / $endRelative) - ($nowRelative * 100 / $endRelative),
+                'nowUntilP4Percent' => $phase4PercentPrecise - ($nowRelative * 100 / $endRelative),
+                'oneStep' => $oneStep,
+                'phase4PercentPrecise' => $phase4PercentPrecise,
+                'totalSolvedTests' => $totalSolvedTests,
+                'totalRemainingTests' => 2550 - $totalSolvedTests,
+                'totalTestsEstimated' => self::getMaxGlobalTests() * $daysDifference,
+                'percentToAdd' => $percentToAdd,
+            ]);
+        }
+        
+        return $nowPercentPrecise;
     }
 
     private function getTerminalHost(): string {
@@ -305,6 +311,9 @@ class TerminalCommand extends Model
     private function changeDirectory(string $path): string {
         $entity = $this->getDirectoryOfFile($path);
         if ($entity instanceof Directory) {
+            if (!$entity->canBeAccessed())
+                return "cd: {$path}: Permission denied";
+            
             SessionData::setSessionData('terminal.cwd', $entity->path());
             return '';
         }
@@ -358,8 +367,12 @@ class TerminalCommand extends Model
     
     private function getFileContents(string $path): string {
         $file = $this->getDirectoryOfFile($path);
-        if ($file instanceof File)
+        if ($file instanceof File) {
+            if (!$file->canBeAccessed())
+                return "cat: {$path}: Permission denied";
+            
             return $file->content ?? '';
+        }
         else if ($file instanceof Directory)
             return "cat: {$path}: Is a directory";
         else
@@ -391,7 +404,7 @@ class TerminalCommand extends Model
         $dailySolvedTests = SessionData::getGlobalData($dailyTestSessionKey, 0);
         if ($savedCommand == 'startTest') {
             if ($input == 'Y' || $input == 'y' || $input == ''){
-                if ($totalSessionTests >= $this->getMaxSessionTests() || $dailySolvedTests >= $this->getMaxGlobalTests())
+                if ($totalSessionTests >= self::getMaxSessionTests() || $dailySolvedTests >= self::getMaxGlobalTests())
                     return "The system is currently overloaded. Please check back in 9§P300§9§P300§9§P300§9§P300§9§P500§9§P500§9§P500§9§P500§9§P800§9§P800§9§P800§9§P800§9\n \n \n \n§DC§";
 
                 SessionData::setSessionData('savedCommand', 'continueTest');
@@ -572,11 +585,11 @@ RET;
         return $toReturn . (!empty($toReturn) ? "\n" : '') . $appendToCommand;
     }
 
-    private function getMaxSessionTests(): int {
-        return ceil($this->getMaxGlobalTests() / 15);
+    private static function getMaxSessionTests(): int {
+        return ceil(self::getMaxGlobalTests() / 15);
     }
 
-    private function getMaxGlobalTests(): int {
+    private static function getMaxGlobalTests(): int {
         $phase4Date = '2024-06-08';
         $daysDifference = (new Carbon())->startOfDay()->diffInDays($phase4Date);
         // 34 * 75 = 2550
