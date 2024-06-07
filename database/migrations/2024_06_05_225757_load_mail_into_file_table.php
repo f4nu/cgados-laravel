@@ -2,8 +2,6 @@
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -14,6 +12,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        (new \App\Models\Directory([
+            'name' => 'spool',
+            'parent_id' => Directory::query()->where('name', '=', 'var')->firstOrFail()->id,
+        ]))->save();
+        (new \App\Models\Directory([
+            'name' => 'mail',
+            'parent_id' => Directory::query()->where('name', '=', 'spool')->firstOrFail()->id,
+        ]))->save();
+        
         $mailDirectory = $this->getMailDirectory();
         $counter = 0;
         collect(Storage::disk('email')->files())
