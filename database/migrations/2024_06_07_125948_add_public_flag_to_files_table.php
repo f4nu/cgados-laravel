@@ -56,7 +56,9 @@ Phia'dena
 Lo staff di ISC
 Tutte le persone che ho abbracciato a GUF
  
+ 
 /seeYouSpaceCowboys
+Fanu
 EOF,
             'directory_id' => \App\Models\Directory::query()->where('name', '=', 'fanu')->firstOrFail()->id,
             'public' => false,
