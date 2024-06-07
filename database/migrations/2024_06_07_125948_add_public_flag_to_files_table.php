@@ -39,7 +39,7 @@ Un colpo di culo e di genio, se non si fosse capito ho unito tutto un po' di pan
 # e quindi?
 E quindi niente. Congratulazioni.
  
-Un ringraziamento speciale in ordine assolutamente casuale alle persone per cui ho fatto tutto questo e che mi accompagnano più o meno tutti i giorni, senza le quali sarei già diventato pazzo. Pazzo? Sono stato pazzo in passato. Senza di loro mi avrebbero già chiuso in una stanza, una stanza di gomma, una stanza di gomma con dei ratti. E i ratti mi rendono pazzo.
+Un ringraziamento speciale in ordine assolutamente casuale alle persone per cui ho fatto tutto questo e che mi accompagnano più o meno tutti i giorni, senza le quali sarei già diventato pazzo. Pazzo? Sono stato pazzo in passato. Senza di loro mi avrebbero già chiuso in una stanza, una stanza di gomma, una stanza di gomma con dei ratti. E mi piacciono i ratti.
  
 La Palma (non quella del Cocco)
 Ollama
@@ -49,8 +49,9 @@ BaronKidd
 Esposito d'Annunzio
 Amos
 Massimo Disk Jockey
-Gufo Critico
-KurasaHakerai
+SophisticatedOtus
+Obergruppenhakai
+Phia'dena
  
 Lo staff di ISC
 Tutte le persone che ho abbracciato a GUF
