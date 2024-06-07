@@ -481,8 +481,14 @@ RET;
             else if ($command === 'cat') {
                 if (empty($args))
                     $toReturn = "cat: missing file operand";
-                else
+                else {
                     $toReturn = $this->getFileContents($args);
+                    $playSfx = rand(0, 100) < 2;
+                    if ($playSfx) {
+                        SessionData::setSessionData('playedSfx', true);
+                        $toReturn = "§SFX|https://cgados-static.pages.dev/791e3d0480532deeeab9226d6e4466e3.mp3§" . $toReturn;
+                    }
+                }
             } else if ($command === 'get') {
                 if (empty($args))
                     $toReturn = "get: missing operand";
