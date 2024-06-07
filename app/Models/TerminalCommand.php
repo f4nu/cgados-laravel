@@ -501,7 +501,7 @@ RET;
                     }
                 }
             } else if ($originalInput === 'INTERLOPE') {
-                $toReturn = "Unknown command: INTERLOPE";
+                $toReturn = "";
                 SessionData::setSessionData('interlope', true);
             } else if ($command === 'su') {
                 if (SessionData::getSessionData('isRoot', false))
