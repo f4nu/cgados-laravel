@@ -14,11 +14,11 @@ return new class extends Migration
     {
         (new \App\Models\Directory([
             'name' => 'spool',
-            'parent_id' => Directory::query()->where('name', '=', 'var')->firstOrFail()->id,
+            'parent_id' => \App\Models\Directory::query()->where('name', '=', 'var')->firstOrFail()->id,
         ]))->save();
         (new \App\Models\Directory([
             'name' => 'mail',
-            'parent_id' => Directory::query()->where('name', '=', 'spool')->firstOrFail()->id,
+            'parent_id' => \App\Models\Directory::query()->where('name', '=', 'spool')->firstOrFail()->id,
         ]))->save();
         
         $mailDirectory = $this->getMailDirectory();
