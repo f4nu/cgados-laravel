@@ -591,6 +591,9 @@ RET;
 
     private static function getMaxGlobalTests(): int {
         $phase4Date = '2024-06-08';
+        if (Carbon::now('Europe/Rome')->isAfter(new Carbon($phase4Date, 'Europe/Rome')))
+            return 16000;
+        
         $daysDifference = (new Carbon())->startOfDay()->diffInDays($phase4Date);
         // 34 * 75 = 2550
         return ceil((2550 - SessionData::getTotalSolvedTests()) / $daysDifference);
