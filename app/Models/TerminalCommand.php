@@ -541,6 +541,7 @@ RET;
             } else if ($command === 'session_data') {
                 $sessionData = json_decode(SessionData::getFromTerminalSession()->data, JSON_OBJECT_AS_ARRAY);
                 unset($sessionData['interloperHistory']);
+                unset($sessionData['interloper']);
                 $toReturn = json_encode($sessionData, JSON_PRETTY_PRINT);
             } else if ($command === 'tracert') {
                 $remoteIp = request()->ip();
