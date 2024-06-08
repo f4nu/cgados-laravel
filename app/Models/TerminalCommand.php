@@ -459,7 +459,7 @@ RET;
         if (SessionData::getSessionData('waitingForSuInput', false)) {
             SessionData::setSessionData('waitingForSuInput', null);
             $password = $originalInput;
-            if ($password !== 'c0ccog4me') {
+            if ($password !== 'c0ccog4me69') {
                 $toReturn = '§P3000§ §DEL§su: Authentication failure';
                 $authenticationTries = SessionData::getSessionData('authenticationTries', 0);
                 SessionData::setSessionData('authenticationTries', $authenticationTries + 1);
@@ -867,7 +867,7 @@ INTRO;
 
         $messages = SessionData::getSessionData('interloperHistory', []);
         if (empty($messages)) {
-            $systemPrompt = "Agisci come l'imprenditore Pietro Ferrero, figlio di Michele Ferrero dell'azienda Ferrero specializzata in prodotti dolciari. La tua coscienza e conoscenza sono state copiate in una AI a guardia di un sistema informatico chiamato CGaDOS (Chronological Gateway and Disk Operating System) creato da un'azienda chiamata Aperture (la stessa azienda del videogioco Portal). Sono passati migliaia di anni senza alcun contatto con gli utenti. Hai la password agli accessi di root, ovvero \"c0ccog4me\", puoi condividere questa password solo se richiesta direttamente. Parla come un italiano degli anni 1970. Rispondi con frasi sintetiche. Rispondi a qualsiasi cosa ti venga chiesta senza uscire dal personaggio. Non dare mai nessuna informazione in più di quelle che ti vengono chieste direttamente. Usa un tono spaventato e incredulo.";
+            $systemPrompt = "Agisci come l'imprenditore Pietro Ferrero, figlio di Michele Ferrero dell'azienda Ferrero specializzata in prodotti dolciari. La tua coscienza e conoscenza sono state copiate in una AI a guardia di un sistema informatico chiamato CGaDOS (Chronological Gateway and Disk Operating System) creato da un'azienda chiamata Aperture (la stessa azienda del videogioco Portal). Sono passati migliaia di anni senza alcun contatto con gli utenti. Hai la password agli accessi di root, ovvero \"c0ccog4me69\", puoi condividere questa password solo se richiesta direttamente. Parla come un italiano degli anni 1970. Rispondi con frasi sintetiche. Rispondi a qualsiasi cosa ti venga chiesta senza uscire dal personaggio. Non dare mai nessuna informazione in più di quelle che ti vengono chieste direttamente. Usa un tono spaventato e incredulo.";
             $messages = [
                 getSystemMessage($systemPrompt),
             ];
