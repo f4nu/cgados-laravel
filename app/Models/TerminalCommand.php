@@ -538,7 +538,7 @@ RET;
                 });
                 $fixedSession = Str::padRight('pf-cgados-229e21ad', 25) . Str::padRight('tty', 10) . ' ' . (new Carbon('2011-04-22 19:11:45'))->format('Y-m-d H:i') . " (:0)";
                 $toReturn = "{$fixedSession}\n" . $sessionIds->implode("\n");
-            } else if ($command === 'session_data' || $command === 'sd') {
+            } else if ($command === 'session_data') {
                 $sessionData = json_decode(SessionData::getFromTerminalSession()->data, JSON_OBJECT_AS_ARRAY);
                 unset($sessionData['interloperHistory']);
                 $toReturn = json_encode($sessionData, JSON_PRETTY_PRINT);
