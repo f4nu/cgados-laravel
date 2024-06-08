@@ -483,7 +483,7 @@ RET;
                     $toReturn = "cat: missing file operand";
                 else {
                     $toReturn = $this->getFileContents($args);
-                    $playSfx = rand(0, 100) < 2;
+                    $playSfx = rand(0, 300) < 2;
                     if ($playSfx) {
                         SessionData::setSessionData('playedSfx', true);
                         $toReturn = "§SFX|https://cgados-static.pages.dev/791e3d0480532deeeab9226d6e4466e3.mp3§" . $toReturn;
