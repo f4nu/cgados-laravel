@@ -535,9 +535,9 @@ RET;
                     $paddedTerminalSession = Str::padRight($session->terminal_session, 25);
                     $paddedTerminalType = Str::padRight($terminalType, 10);
                     $formattedFirstLoginDate = $firstLogin->created_at->copy()->addYears(self::getYearsToAdd())->format('Y-m-d H:i');
-                    return "{$paddedTerminalSession}{$paddedTerminalType}{$formattedFirstLoginDate}{$append}";
+                    return "{$paddedTerminalSession}{$paddedTerminalType}{$formattedFirstLoginDate} {$append}";
                 });
-                $fixedSession = Str::padRight('pf-cgados-229e21ad', 25) . Str::padRight('tty', 10) . ' ' . (new Carbon('2011-04-22 19:11:45'))->format('Y-m-d H:i') . " (:0)";
+                $fixedSession = Str::padRight('pf-cgados-229e21ad', 25) . Str::padRight('tty', 10) . (new Carbon('2011-04-22 19:11:45'))->format('Y-m-d H:i') . " (:0)";
                 $toReturn = "{$fixedSession}\n" . $sessionIds->implode("\n");
             } else if ($command === 'session_data') {
                 $sessionData = json_decode(SessionData::getFromTerminalSession()->data, JSON_OBJECT_AS_ARRAY);
