@@ -944,6 +944,7 @@ SELECT
     IFNULL(JSON_UNQUOTE(JSON_EXTRACT(stc.args, '$.input')), '') as lastCommand,
     IFNULL(JSON_UNQUOTE(JSON_EXTRACT(sd.data, '$.authenticationTries')), '') as auths,
     IFNULL(JSON_UNQUOTE(JSON_EXTRACT(sd.data, '$.playedSfx')), '') as sfx,
+    IFNULL(JSON_UNQUOTE(JSON_EXTRACT(sd.data, '$.maxInterlopeLevel')), '') as maxInterlopeLevel,
     IFNULL(chat.totalMessages, '') as totalMessages,
     stc.args
 FROM session_terminal_commands stc
@@ -965,7 +966,7 @@ QUERY
 );
         
         $toReturn = [
-            "TERMINAL SESSION    CMDS  1ST LOGIN   LAST CMD    AU S M  CWD/CMD"
+            "TERMINAL SESSION    CMDS  1ST LOGIN   LAST CMD    AU X S M  CWD/CMD"
         ];
         foreach ($leaderboardRows as $row) {
             $terminalSession = Str::padRight($row->terminal_session, 20);
@@ -977,7 +978,8 @@ QUERY
             $sfx = (int)$row->sfx;
             $totalMessages = Str::padRight((int)$row->totalMessages, 3);
             $lastCommand = $row->lastCommand;
-            $toReturn[] = "{$terminalSession}{$totalCommands}{$firstLogin} {$lastCommandDate} {$auths}{$sfx} {$totalMessages}{$cwd} » {$lastCommand}";
+            $maxInterlopeLevel = Str::padRight($row->maxInterlopeLevel, 2);
+            $toReturn[] = "{$terminalSession}{$totalCommands}{$firstLogin} {$lastCommandDate} {$auths}{$maxInterlopeLevel}{$sfx} {$totalMessages}{$cwd} » {$lastCommand}";
         }
         
         return implode("\n", $toReturn);
