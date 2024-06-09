@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -543,6 +544,8 @@ RET;
                 unset($sessionData['interloperHistory']);
                 unset($sessionData['interlope']);
                 $toReturn = json_encode($sessionData, JSON_PRETTY_PRINT);
+            } else if ($command === 'stats') {
+                $toReturn = $this->getLeaderboard();
             } else if ($command === 'tracert') {
                 $remoteIp = request()->ip();
                 $toReturn = "traceroute to {$remoteIp}, 30 hops max, 3 GB packets";
@@ -928,5 +931,54 @@ INTRO;
     
     private function getInterloperInputString(): string {
         return "« §INPUT§";
+    }
+    
+    private function getLeaderboard(): string {
+        $leaderboardRows = DB::select(<<<QUERY
+SELECT
+    stc.terminal_session,
+    first.total_commands,
+    first.first_login,
+    first.last_command_date,
+    IFNULL(JSON_UNQUOTE(JSON_EXTRACT(sd.data, '$.terminal.cwd')), '') as cwd,
+    IFNULL(JSON_UNQUOTE(JSON_EXTRACT(stc.args, '$.input')), '') as lastCommand,
+    IFNULL(JSON_UNQUOTE(JSON_EXTRACT(sd.data, '$.authenticationTries')), '') as auths,
+    IFNULL(JSON_UNQUOTE(JSON_EXTRACT(sd.data, '$.playedSfx')), '') as sfx,
+    IFNULL(chat.totalMessages, '') as totalMessages,
+    stc.args
+FROM session_terminal_commands stc
+         JOIN (
+    SELECT
+        MAX(stc.id) AS last_command_id,
+        MAX(stc.created_at) AS last_command_date,
+        stc.terminal_session,
+        COUNT(*) AS total_commands,
+        MIN(stc.created_at) `first_login`
+    FROM session_terminal_commands stc
+    GROUP BY stc.terminal_session
+) first ON first.last_command_id = stc.id
+         JOIN session_data sd ON sd.terminal_session = stc.terminal_session
+         LEFT JOIN (SELECT c.terminal_session, COUNT(*) totalMessages FROM chat_messages c GROUP BY c.terminal_session) chat ON chat.terminal_session = stc.terminal_session
+ORDER BY stc.id DESC
+LIMIT 5;
+QUERY
+);
+        
+        $toReturn = [
+            "TERMINAL SESSION    CMDS  1ST LOGIN   LAST CMD    AU S M  CWD"
+        ];
+        foreach ($leaderboardRows as $row) {
+            $terminalSession = Str::padRight($row->terminal_session, 20);
+            $totalCommands = Str::padRight($row->total_commands, 6);
+            $firstLogin = Carbon::parse($row->first_login)->format('m-d H:i');
+            $lastCommandDate = Carbon::parse($row->last_command_date)->format('m-d H:i');
+            $auths = Str::padRight($row->auths, 3);
+            $cwd = $row->cwd;
+            $sfx = (int)$row->sfx;
+            $totalMessages = Str::padRight((int)$row->totalMessages, 3);
+            $toReturn[] = "{$terminalSession}{$totalCommands}{$firstLogin} {$lastCommandDate} {$auths}{$sfx} {$totalMessages}{$cwd}";
+        }
+        
+        return implode("\n", $toReturn);
     }
 }
