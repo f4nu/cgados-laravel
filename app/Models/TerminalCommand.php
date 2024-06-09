@@ -965,7 +965,7 @@ QUERY
 );
         
         $toReturn = [
-            "TERMINAL SESSION    CMDS  1ST LOGIN   LAST CMD    AU S M  CWD"
+            "TERMINAL SESSION    CMDS  1ST LOGIN   LAST CMD    AU S M  CWD/CMD"
         ];
         foreach ($leaderboardRows as $row) {
             $terminalSession = Str::padRight($row->terminal_session, 20);
@@ -976,7 +976,8 @@ QUERY
             $cwd = $row->cwd;
             $sfx = (int)$row->sfx;
             $totalMessages = Str::padRight((int)$row->totalMessages, 3);
-            $toReturn[] = "{$terminalSession}{$totalCommands}{$firstLogin} {$lastCommandDate} {$auths}{$sfx} {$totalMessages}{$cwd}";
+            $lastCommand = $row->lastCommand;
+            $toReturn[] = "{$terminalSession}{$totalCommands}{$firstLogin} {$lastCommandDate} {$auths}{$sfx} {$totalMessages}{$cwd} » {$lastCommand}";
         }
         
         return implode("\n", $toReturn);
