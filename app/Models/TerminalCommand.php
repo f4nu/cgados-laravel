@@ -393,7 +393,10 @@ class TerminalCommand extends Model
     }
 
     public function input(): string {
+        
         $originalInput = $this->args->input;
+        // Replace the unicode character U+2001 with a space
+        $originalInput = str_replace(' ', ' ', $originalInput);
         $isInteractiveInterloper = SessionData::getSessionData('interactiveInterloper', false);
         if ($isInteractiveInterloper)
             return $this->talkWithInterloper($originalInput);
