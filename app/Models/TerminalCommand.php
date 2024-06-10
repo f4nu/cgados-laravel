@@ -788,12 +788,13 @@ ASCII,
     private function getInterlopeDemo(): string {
         $level = $this->getLevel();
         SessionData::setSessionData('lastInterlopeLevel', $level);
-        if ($level === 5)
-            return $this->connectToInterlope();
-        
         $maxInterlopeLevel = SessionData::getSessionData('maxInterlopeLevel', 0);
         if ($level > $maxInterlopeLevel)
             SessionData::setSessionData('maxInterlopeLevel', $level);
+        
+        if ($level === 5)
+            return $this->connectToInterlope();
+        
         $commands = collect([
             'x',
             'y',
