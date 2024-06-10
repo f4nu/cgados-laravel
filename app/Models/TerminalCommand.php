@@ -791,7 +791,9 @@ ASCII,
         if ($level === 5)
             return $this->connectToInterlope();
         
-        SessionData::setSessionData('maxInterlopeLevel', $level);
+        $maxInterlopeLevel = SessionData::getSessionData('maxInterlopeLevel', 0);
+        if ($level > $maxInterlopeLevel)
+            SessionData::setSessionData('maxInterlopeLevel', $level);
         $commands = collect([
             'x',
             'y',
