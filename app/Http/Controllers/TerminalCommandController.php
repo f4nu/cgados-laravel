@@ -38,6 +38,7 @@ class TerminalCommandController extends Controller
     }
 
     public function space(Request $request): JsonResponse {
+        Log::debug('User breached the space.');
         return new JsonResponse([
             'message' => 'See you, space cowboy. 🚀',
         ]);
