@@ -549,6 +549,20 @@ RET;
                 $toReturn = json_encode($sessionData, JSON_PRETTY_PRINT);
             } else if ($command === 'stats') {
                 $toReturn = $this->getLeaderboard();
+            } else if ($command === 'help') {
+                $toReturn = <<<RET
+Available commands:
+ 
+date      display the current date and time
+pwd       print the name of the current working directory
+ls        list directory contents
+cd        change the current working directory
+cat       concatenate files and print on the standard output
+tracert   trace the route to a remote IP
+clear     clear the terminal screen
+cls       clear the terminal screen
+get       retrieve a file from a remote server
+RET;
             } else if ($command === 'tracert') {
                 $remoteIp = request()->ip();
                 $toReturn = "traceroute to {$remoteIp}, 30 hops max, 3 GB packets";
@@ -778,7 +792,7 @@ ASCII,
             1 => 60,
             2 => 80,
             3 => 90,
-            4 => 95,
+            4 => 96,
             5 => 100,
         ];
         $roll = rand(1, 100);
