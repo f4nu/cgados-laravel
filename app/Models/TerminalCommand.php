@@ -521,7 +521,9 @@ RET;
                     $toReturn = "Password: §HIDDEN§";
                     $appendHostAndInput = FALSE;
                 }
-            } else if ($command === 'exit') {
+            } else if ($command === '32844137')
+                $toReturn = 'AIUTACI';
+            else if ($command === 'exit') {
                 if (SessionData::getSessionData('isRoot', false)) {
                     SessionData::setSessionData('isRoot', false);
                     $toReturn = "§CLS§";
