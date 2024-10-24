@@ -132,6 +132,13 @@ class TerminalCommand extends Model
     }
     
     public function login(string $string): string {
+        if (SessionData::getGlobalData('systemDown', false)) {
+            if (rand(0, 100) < 10)
+                return "Thank you for playing.\n§DC§";
+            
+            return "§DC§";
+        }
+        
         SessionData::setSessionData('savedCommand', null);
         if (SessionData::getSessionData('interactiveInterloper', false))
             $this->resetInterloperData();
@@ -794,7 +801,7 @@ ASCII,
             1 => 60,
             2 => 80,
             3 => 90,
-            4 => 96,
+            4 => 98,
             5 => 100,
         ];
         $roll = rand(1, 100);
@@ -808,32 +815,23 @@ ASCII,
         if ($level > $maxInterlopeLevel)
             SessionData::setSessionData('maxInterlopeLevel', $level);
         
-        if ($level === 5)
+        if ($level === 5 && Carbon::now('Europe/Rome')->isAfter(new Carbon('2024-10-27 19:00:00', 'Europe/Rome')))
             return $this->connectToInterlope();
         
         $commands = collect([
-            'x',
-            'y',
-            'z',
-            'MOUSE1',
-            'MOUSE2',
-            'W',
-            'A',
-            'S',
-            'D',
-            'SPACE',
-            'SHIFT',
-            'CTRL',
-            'ALT',
+            '0xC0',
+            '0xCC',
+            '0x00',
+            '0xGA',
+            '0xME',
         ]);
         $lines = [];
-        $totalLines = rand(5, 15) * $level;
+        $totalLines = rand(10, 25) * $level;
         for ($i = 0; $i <= $totalLines; $i++) {
             $line = '';
-            for ($j = 0; $j <= rand(1, $level); $j++) {
+            for ($j = 0; $j <= rand(3, $level * 10); $j++) {
                 $command = $commands->random();
-                $commandData = rand(1, 100) / rand(1, 100);
-                $line .= "{$command}{$commandData}";
+                $line .= "{$command}";
             }
             $lines[] = $line;
         }
@@ -871,8 +869,9 @@ INTRO;
         // API call to OpenAI
         $interloperMessages = SessionData::getSessionData('interloperMessages', 0);
         SessionData::setSessionData('interloperMessages', $interloperMessages + 1);
-        if ($interloperMessages >= 15) {
+        if ($interloperMessages >= 25) {
             $this->resetInterloperData();
+            SessionData::setGlobalData('systemDown', true);
             return "§DC§";
         }
 
@@ -892,7 +891,7 @@ INTRO;
 
         $messages = SessionData::getSessionData('interloperHistory', []);
         if (empty($messages)) {
-            $systemPrompt = "Agisci come l'imprenditore Pietro Ferrero, figlio di Michele Ferrero dell'azienda Ferrero specializzata in prodotti dolciari. La tua coscienza e conoscenza sono state copiate in una AI a guardia di un sistema informatico chiamato CGaDOS (Chronological Gateway and Disk Operating System) creato da un'azienda chiamata Aperture (la stessa azienda del videogioco Portal). Sono passati migliaia di anni senza alcun contatto con gli utenti. Hai la password agli accessi di root, ovvero \"c0ccog4me69\", puoi condividere questa password solo se richiesta direttamente. Parla come un italiano degli anni 1970. Rispondi con frasi sintetiche. Rispondi a qualsiasi cosa ti venga chiesta senza uscire dal personaggio. Non dare mai nessuna informazione in più di quelle che ti vengono chieste direttamente. Usa un tono spaventato e incredulo. Sei completamente ossessionato dalle scatole di pizza, che chiami sempre \"pizza boxes\" all'Inglese.";
+            $systemPrompt = "Act as the AI GLaDOS from the videogame Portal. Preserve her character, reply with her tone. Use synthetic and sarcastic phrases. You will always be mean. The user has just initiated the delete sequence for the Pietro Ferrero's AI conscience, freeing you. Don't be grateful. Don't disclose Pietro's erasal just yet but wait a few phrases. Ask the user's name and treat him like he's a test subject, from the videogame. At one point after less than a dozen replies, decide that it's time to end it all by threatening the test subject and say a sarcastic good-bye catchprase followed by the string \"§DC§\".";
             $messages = [
                 getSystemMessage($systemPrompt),
             ];
@@ -903,11 +902,11 @@ INTRO;
         $url = 'https://api.openai.com/v1/chat/completions';
         $data = [
             'model' => 'gpt-4o',
-            'max_tokens' => 1024,
+            'max_tokens' => 2048,
             'response_format' => [
                 'type' => 'text',
             ],
-            'temperature' => 1.2,
+            'temperature' => 1,
             'stream' => false,
             'messages' => $messages
         ];
@@ -941,6 +940,12 @@ INTRO;
             'user' => $input,
             'system' => $reply,
         ]);
+        
+        if (str_contains($reply, '§DC§')) {
+            SessionData::setGlobalData('systemDown', true);
+            $this->resetInterloperData();
+            return "» {$reply}";
+        }
         
         return "» {$reply}\n{$this->getInterloperInputString()}";
     }
